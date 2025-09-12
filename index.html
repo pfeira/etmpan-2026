@@ -13,7 +13,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Teko:wght@500;600&display=swap" rel="stylesheet">
     <style>
-        /* CSS (nenhuma alteração aqui, apenas adicionei o estilo do login no final) */
         :root {
             --primary-color: #0D47A1; --primary-hover: #1565C0;
             --secondary-color: #1976D2; --secondary-hover: #2196F3;
@@ -398,8 +397,7 @@
         const cancelResultBtn = document.getElementById('cancelResult');
         const saveResultBtn = document.getElementById('saveResult');
         const resetBtn = document.getElementById('resetBtn');
-        const exportCompleteBtn = document.getElementById('exportCompleteBtn');
-
+        
         function initAuth() {
             loadState(); 
             if (appState.loggedIn) {
@@ -517,7 +515,7 @@
             document.getElementById('exportSumulaEliminatoriaBtn').disabled = !isGroupPhaseDone;
             document.getElementById('exportSumulaFinalBtn').disabled = !isEliminationDone;
             document.getElementById('exportRankingsBtn').disabled = !isEliminationDone;
-            exportCompleteBtn.disabled = !isEliminationDone;
+            document.getElementById('exportCompleteBtn').disabled = !isEliminationDone;
         }
 
         function initSetupPhase() {
@@ -660,7 +658,7 @@
             container.querySelectorAll('.elim-match.playable').forEach(card => card.addEventListener('click', (e) => openMatchModal(e.currentTarget.dataset.matchId)));
         }
         
-        // function advanceWinner(match) {
+        function advanceWinner(match) {
             if (match.score1 === null) return;
             const winnerId = match.score1 > match.score2 ? match.p1 : match.p2;
             const [side, matchType, matchIndexStr] = match.id.split('-');
@@ -670,7 +668,6 @@
                 const sfPosition = (matchIndex % 2 === 0) ? 'p1' : 'p2';
                 state.elimination[side === 'A' ? 'sideA' : 'sideB'].semifinals[sfIndex][sfPosition] = winnerId;
             } else if (matchType === 'SF') {
-                // Bug corrigido aqui: matchIndex 0 vai para p1, matchIndex 1 vai para p2.
                 const finalPosition = (matchIndex === 0) ? 'p1' : 'p2';
                 state.elimination[side === 'A' ? 'sideA' : 'sideB'].final[0][finalPosition] = winnerId;
             }
@@ -769,7 +766,7 @@
         function closeGenericModal() { genericModal.classList.add('hidden'); confirmCallback = null; }
         genericModalConfirmBtn.addEventListener('click', () => { if (confirmCallback) confirmCallback(); }); genericModalCancelBtn.addEventListener('click', closeGenericModal); genericModalClose.addEventListener('click', closeGenericModal);
         
-        // const { jsPDF } = window.jspdf;
+        const { jsPDF } = window.jspdf;
         function showToast(message, type = 'success') {
             const toast = document.getElementById('pdfToast');
             document.getElementById('toastMessage').textContent = message;
@@ -792,6 +789,7 @@
             doc.setTextColor(0);
             return doc;
         }
+        
         document.getElementById('exportSetupBtn').addEventListener('click', () => {
             const doc = setupPdf('Lista de Inscritos por Ranking', 'portrait'); const body = state.athletes.map(a => [a.rank, a.name]);
             doc.autoTable({ head: [['Ranking', 'Nome do Atleta']], body: body, startY: 40 });
@@ -826,8 +824,7 @@
             doc.save(`ranking_final_${getSafeFilename(state.tournamentName)}.pdf`);
             showToast('Ranking final gerado!');
         });
-        function formatSets(sets) { if (!sets || sets.length === 0) return ''; return sets.map(set => `${set.s1}-${set.s2}`).join(', '); }
-        function exportCompleteReport() {
+        document.getElementById('exportCompleteBtn').addEventListener('click', () => {
             const doc = setupPdf('Relatório Final Completo', 'landscape'); let startY = 40; const tournamentName = getSafeFilename(state.tournamentName);
             doc.autoTable({ head: [[{ content: 'Lista de Inscritos', styles: { halign: 'center', fillColor: [52, 58, 64] } }]], startY: startY });
             const inscritosBody = state.athletes.map(a => [a.rank, a.name]);
@@ -859,9 +856,9 @@
             const rankingBody = ranking.map((r, i) => [`${i + 1}º`, r.name, r.basePoints, r.bonusPoints, r.points, r.stage]);
             doc.autoTable({ head: [[{ content: 'Ranking Final Detalhado', styles: { halign: 'center', fillColor: [52, 58, 64] } }]], startY: startY });
             doc.autoTable({ head: [['Pos.', 'Atleta', 'Pts. Base', 'Pts. Bônus', 'Total', 'Etapa']], body: rankingBody, startY: doc.autoTable.previous.finalY });
-            doc.save(`relatorio_final_${tournamentName}.pdf`); showToast('Relatório final completo gerado!');
-        }
-        exportCompleteBtn.addEventListener('click', exportCompleteReport);
+            doc.save(`relatorio_final_${getSafeFilename(state.tournamentName)}.pdf`); showToast('Relatório final completo gerado!');
+        });
+        function formatSets(sets) { if (!sets || sets.length === 0) return ''; return sets.map(set => `${set.s1}-${set.s2}`).join(', '); }
         function exportSummaries(rounds, title, filename) {
             const doc = setupPdf(title, 'landscape'); let startY = 40;
             const addSummaryToDoc = (matchTitle, match) => {
