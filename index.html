@@ -150,7 +150,6 @@
         @media (max-width: 1200px) { .group-content { grid-template-columns: 1fr; } .elimination-container { flex-direction: column; } .elimination-side { min-width: 100%; } }
         @media (max-width: 768px) { .container { flex-direction: column; } .sidebar { position: static; width: 100%; height: auto; overflow-y: visible; } .main-content { margin-left: 0; } .phase-name { display: none; } .phase:not(:last-child)::after { right: -50%; width: 100%; } .groups-grid { grid-template-columns: 1fr; } .elimination-rounds { flex-direction: column; gap: 10px; } .round { gap: 10px; } }
         
-        /* NOVO: Estilos para a tela de login */
         #login-screen {
             position: fixed;
             top: 0;
@@ -343,34 +342,22 @@
     
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // ALTERAÇÃO: A estrutura de estado foi completamente refeita
-        const APP_VERSION = "2.0"; // Nova versão para a nova estrutura de dados
-        let appState = {}; // O objeto principal que guardará tudo
-        let state = {}; // A variável 'state' agora é um ponteiro para o torneio da divisão ativa
+        const APP_VERSION = "2.1"; 
+        let appState = {}; 
+        let state = {}; 
 
-        // NOVO: Estrutura inicial para um único torneio
         function getInitialTournamentState(division) {
             return {
-                appVersion: APP_VERSION,
-                tournamentName: '',
-                division: division,
-                currentPhase: 'setup',
-                athletes: [],
-                groups: {},
-                groupMatches: {},
-                standings: {},
+                appVersion: APP_VERSION, tournamentName: '', division: division,
+                currentPhase: 'setup', athletes: [], groups: {}, groupMatches: {}, standings: {},
                 elimination: { qualifiers: [], sideA: { quarterfinals: [], semifinals: [], final: [] }, sideB: { quarterfinals: [], semifinals: [], final: [] }, overallFinal: [] },
-                activeGroupTab: 'A',
-                currentMatch: null,
+                activeGroupTab: 'A', currentMatch: null,
             };
         }
 
-        // NOVO: Estrutura inicial para toda a aplicação
         function getInitialAppState() {
             return {
-                appVersion: APP_VERSION,
-                loggedIn: false,
-                activeDivision: '1ª Div.',
+                appVersion: APP_VERSION, loggedIn: false, activeDivision: '1ª Div.',
                 tournaments: {
                     '1ª Div.': getInitialTournamentState('1ª Div.'),
                     '2ª Div.': getInitialTournamentState('2ª Div.'),
@@ -389,14 +376,12 @@
             BONUS: { '3-0': { winner: 5, loser: 0 }, '3-1': { winner: 4, loser: 1 }, '3-2': { winner: 3, loser: 2 } }
         };
 
-        // DOM Elements
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app');
         const loginBtn = document.getElementById('loginBtn');
         const logoutBtn = document.getElementById('logoutBtn');
         const divisionSelector = document.getElementById('divisionSelector');
         const tournamentNameInput = document.getElementById('tournamentName');
-        // ... (todos os outros elementos DOM permanecem os mesmos)
         const athletesGrid = document.getElementById('athletesGrid');
         const generateGroupsBtn = document.getElementById('generateGroupsBtn');
         const groupsDisplay = document.getElementById('groupsDisplay');
@@ -415,10 +400,8 @@
         const resetBtn = document.getElementById('resetBtn');
         const exportCompleteBtn = document.getElementById('exportCompleteBtn');
 
-
-        // --- NOVO: Funções de Autenticação ---
         function initAuth() {
-            loadState(); // Carrega o estado geral da aplicação
+            loadState(); 
             if (appState.loggedIn) {
                 loginScreen.classList.add('hidden');
                 appContainer.classList.remove('hidden');
@@ -433,8 +416,6 @@
             const user = document.getElementById('username').value;
             const pass = document.getElementById('password').value;
             const errorEl = document.getElementById('login-error');
-            
-            // Credenciais simples, hardcoded no código
             if (user === 'admin' && pass === 'admin123') {
                 appState.loggedIn = true;
                 saveState();
@@ -456,11 +437,7 @@
         });
         logoutBtn.addEventListener('click', handleLogout);
 
-        // --- ALTERAÇÃO: Gerenciamento de Estado agora para toda a aplicação ---
-        function saveState() {
-            localStorage.setItem('gestorAppState', JSON.stringify(appState));
-        }
-
+        function saveState() { localStorage.setItem('gestorAppState', JSON.stringify(appState)); }
         function loadState() {
             const savedStateJSON = localStorage.getItem('gestorAppState');
             if (savedStateJSON) {
@@ -473,7 +450,6 @@
             appState = getInitialAppState();
         }
         
-        // ALTERAÇÃO: O reset agora afeta apenas o torneio da divisão ativa
         function resetState() {
             showConfirm(`Tem certeza que deseja resetar o torneio da ${appState.activeDivision}? Todos os dados desta divisão serão perdidos.`, 'Resetar Torneio',
                 () => {
@@ -485,35 +461,24 @@
         }
         resetBtn.addEventListener('click', resetState);
 
-
-        // --- Lógica Principal da Aplicação ---
         function init() {
-            // ALTERAÇÃO: Define o ponteiro 'state' para o torneio ativo
             state = appState.tournaments[appState.activeDivision];
-            
-            // Adiciona listeners globais que controlam o estado principal
             divisionSelector.value = appState.activeDivision;
             divisionSelector.addEventListener('change', (e) => {
                 appState.activeDivision = e.target.value;
                 saveState();
-                init(); // Re-inicializa a aplicação com o novo estado
+                init(); 
             });
-            
             tournamentNameInput.addEventListener('input', (e) => {
                 state.tournamentName = e.target.value;
                 saveState();
             });
-
             render();
         }
 
-        // ALTERAÇÃO: Função de renderização principal
         function render() {
-            // Re-aponta para o estado correto toda vez que renderizar
             state = appState.tournaments[appState.activeDivision];
-            
             tournamentNameInput.value = state.tournamentName;
-
             updatePhaseUI();
             switch (state.currentPhase) {
                 case 'setup': initSetupPhase(); break;
@@ -523,11 +488,6 @@
             }
             updatePdfButtons();
         }
-        
-        // O restante das funções (initSetupPhase, generateGroups, etc.) permanece praticamente igual,
-        // pois elas operam na variável 'state', que agora é um ponteiro para o torneio correto.
-
-        // --- Funções UI e de Fase (sem grandes alterações de lógica interna) ---
         
         function updatePhaseUI() {
             phaseIndicator.querySelectorAll('.phase').forEach(phaseEl => {
@@ -591,53 +551,32 @@
             }
         });
 
-        function generateAndRenderGroups() {
-            generateGroups();
-            renderGroupsDisplay();
-            groupsDisplay.classList.remove('hidden');
-            generateGroupsBtn.classList.add('hidden');
-            saveState();
-            updatePdfButtons();
-        }
-
+        function generateAndRenderGroups() { generateGroups(); renderGroupsDisplay(); groupsDisplay.classList.remove('hidden'); generateGroupsBtn.classList.add('hidden'); saveState(); updatePdfButtons(); }
         function generateGroups() {
             const getByRank = (rank) => state.athletes.find(a => a.rank === rank);
             state.groups = {
-                'A': [getByRank(1), getByRank(16), getByRank(17)], 'B': [getByRank(2), getByRank(15), getByRank(18)],
-                'C': [getByRank(3), getByRank(14), getByRank(19)], 'D': [getByRank(4), getByRank(13), getByRank(20)],
-                'E': [getByRank(5), getByRank(12), getByRank(21)], 'F': [getByRank(6), getByRank(11), getByRank(22)],
-                'G': [getByRank(7), getByRank(10), getByRank(23)], 'H': [getByRank(8), getByRank(9), getByRank(24)],
+                'A': [getByRank(1), getByRank(16), getByRank(17)], 'B': [getByRank(2), getByRank(15), getByRank(18)], 'C': [getByRank(3), getByRank(14), getByRank(19)], 'D': [getByRank(4), getByRank(13), getByRank(20)],
+                'E': [getByRank(5), getByRank(12), getByRank(21)], 'F': [getByRank(6), getByRank(11), getByRank(22)], 'G': [getByRank(7), getByRank(10), getByRank(23)], 'H': [getByRank(8), getByRank(9), getByRank(24)],
             };
         }
-
         function renderGroupsDisplay() {
             groupsGrid.innerHTML = '';
             GROUP_NAMES.forEach(name => {
                 groupsGrid.innerHTML += `<div class="group-card"><h4>Grupo ${name}</h4><ul>${state.groups[name].map(a => `<li><span>${a.rank}º</span> ${a.name}</li>`).join('')}</ul></div>`;
             });
         }
-        
-        startTournamentBtn.addEventListener('click', () => {
-            state.currentPhase = 'groups';
-            generateGroupMatchesAndStandings();
-            saveState();
-            render();
-        });
-
+        startTournamentBtn.addEventListener('click', () => { state.currentPhase = 'groups'; generateGroupMatchesAndStandings(); saveState(); render(); });
         function generateGroupMatchesAndStandings() {
-            state.groupMatches = {};
-            state.standings = {};
+            state.groupMatches = {}; state.standings = {};
             GROUP_NAMES.forEach(groupName => {
                 const athletes = state.groups[groupName];
                 state.groupMatches[groupName] = [
-                    { id: `${groupName}-1`, p1: athletes[0].id, p2: athletes[2].id, score1: null, score2: null, sets: [] },
-                    { id: `${groupName}-2`, p1: athletes[1].id, p2: athletes[2].id, score1: null, score2: null, sets: [] },
+                    { id: `${groupName}-1`, p1: athletes[0].id, p2: athletes[2].id, score1: null, score2: null, sets: [] }, { id: `${groupName}-2`, p1: athletes[1].id, p2: athletes[2].id, score1: null, score2: null, sets: [] },
                     { id: `${groupName}-3`, p1: athletes[0].id, p2: athletes[1].id, score1: null, score2: null, sets: [] }
                 ];
                 state.standings[groupName] = athletes.map(a => ({ athleteId: a.id, played: 0, wins: 0, losses: 0, setsWon: 0, setsLost: 0 }));
             });
         }
-
         function initGroupsPhase() { renderGroupTabs(); renderGroupView(state.activeGroupTab); checkAllGroupMatchesPlayed(); }
         function renderGroupTabs() {
             groupTabsContainer.innerHTML = '';
@@ -655,9 +594,7 @@
             const matches = state.groupMatches[groupName];
             groupMatchesContainer.innerHTML = '<h4>Partidas</h4>';
             matches.forEach(match => {
-                const p1 = getAthleteById(match.p1);
-                const p2 = getAthleteById(match.p2);
-                const played = match.score1 !== null;
+                const p1 = getAthleteById(match.p1); const p2 = getAthleteById(match.p2); const played = match.score1 !== null;
                 groupMatchesContainer.innerHTML += `<div class="match-card ${played ? 'played' : ''}" data-match-id="${match.id}"><div class="match-players">${p1.name} (${p1.rank}º) vs ${p2.name} (${p2.rank}º)</div><div class="match-result">${played ? `${match.score1} - ${match.score2}` : '-'}</div></div>`;
             });
             groupMatchesContainer.querySelectorAll('.match-card:not(.played)').forEach(card => card.addEventListener('click', (e) => openMatchModal(e.currentTarget.dataset.matchId)));
@@ -669,13 +606,11 @@
             groupStandingsContainer.innerHTML = `<h4>Classificação</h4><table class="standings-table"><thead><tr><th>Atleta</th><th>J</th><th>V</th><th>D</th><th>SV</th><th>SP</th><th>SG</th></tr></thead><tbody>${standings.map(s => { const athlete = getAthleteById(s.athleteId); return `<tr><td>${athlete.name} (${athlete.rank}º)</td><td>${s.played}</td><td>${s.wins}</td><td>${s.losses}</td><td>${s.setsWon}</td><td>${s.setsLost}</td><td>${s.setsWon - s.setsLost}</td></tr>`; }).join('')}</tbody></table>`;
         }
         function calculateStandings(groupName) {
-            const matches = state.groupMatches[groupName];
-            const standings = state.standings[groupName];
+            const matches = state.groupMatches[groupName]; const standings = state.standings[groupName];
             standings.forEach(s => { s.played=0; s.wins=0; s.losses=0; s.setsWon=0; s.setsLost=0; });
             matches.forEach(match => {
                 if (match.score1 === null) return;
-                const s1 = standings.find(s => s.athleteId === match.p1);
-                const s2 = standings.find(s => s.athleteId === match.p2);
+                const s1 = standings.find(s => s.athleteId === match.p1); const s2 = standings.find(s => s.athleteId === match.p2);
                 s1.played++; s2.played++; s1.setsWon += match.score1; s1.setsLost += match.score2; s2.setsWon += match.score2; s2.setsLost += match.score1;
                 if (match.score1 > match.score2) { s1.wins++; s2.losses++; } else { s2.wins++; s1.losses++; }
             });
@@ -687,8 +622,7 @@
                     if (h2h?.score1 !== null) { return (h2h.p1 === a.athleteId && h2h.score1 > h2h.score2) || (h2h.p2 === a.athleteId && h2h.score2 > h2h.score1) ? -1 : 1; }
                 }
                 const diffA = a.setsWon - a.setsLost; const diffB = b.setsWon - b.setsLost;
-                if (diffB !== diffA) return diffB - diffA;
-                if (b.setsWon !== a.setsWon) return b.setsWon - a.setsWon;
+                if (diffB !== diffA) return diffB - diffA; if (b.setsWon !== a.setsWon) return b.setsWon - a.setsWon;
                 return getAthleteById(a.athleteId).rank - getAthleteById(b.athleteId).rank;
             });
         }
@@ -696,11 +630,7 @@
         finishGroupsBtn.addEventListener('click', () => { state.currentPhase = 'elimination'; generateEliminationBracket(); saveState(); render(); });
         function generateEliminationBracket() {
             const qualifiers = [];
-            GROUP_NAMES.forEach(groupName => {
-                calculateStandings(groupName);
-                qualifiers.push({ ...state.standings[groupName][0], pos: `1º ${groupName}` });
-                qualifiers.push({ ...state.standings[groupName][1], pos: `2º ${groupName}` });
-            });
+            GROUP_NAMES.forEach(groupName => { calculateStandings(groupName); qualifiers.push({ ...state.standings[groupName][0], pos: `1º ${groupName}` }); qualifiers.push({ ...state.standings[groupName][1], pos: `2º ${groupName}` }); });
             state.elimination.qualifiers = qualifiers;
             const getQ = (pos) => qualifiers.find(q => q.pos === pos).athleteId;
             state.elimination.sideA.quarterfinals = [ { id: 'A-QF-1', p1: getQ('1º A'), p2: getQ('2º H') }, { id: 'A-QF-2', p1: getQ('1º G'), p2: getQ('2º B') }, { id: 'A-QF-3', p1: getQ('1º D'), p2: getQ('2º E') }, { id: 'A-QF-4', p1: getQ('1º F'), p2: getQ('2º C') }, ].map(m => ({ ...m, score1: null, score2: null, sets: [] }));
@@ -717,23 +647,20 @@
             renderEliminationRound(null, 'overallFinal', 'matchesFinal');
         }
         function renderEliminationRound(side, roundKey, containerId) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
+            const container = document.getElementById(containerId); container.innerHTML = '';
             const matchesToRender = side ? state.elimination[side][roundKey] : state.elimination[roundKey];
             const renderMatchHTML = (match) => {
-                const p1 = match.p1 ? getAthleteById(match.p1) : null;
-                const p2 = match.p2 ? getAthleteById(match.p2) : null;
+                const p1 = match.p1 ? getAthleteById(match.p1) : null; const p2 = match.p2 ? getAthleteById(match.p2) : null;
                 const getQualifierInfo = (player) => { if (!player) return ''; const qualifier = state.elimination.qualifiers.find(q => q.athleteId === player.id); if (qualifier) return qualifier.pos.replace('º ', ''); return '(Vencedor)'; };
-                const p1Display = p1 ? `${getQualifierInfo(p1)} - ${p1.name}` : 'A definir';
-                const p2Display = p2 ? `${getQualifierInfo(p2)} - ${p2.name}` : 'A definir';
-                const played = match.score1 !== null;
-                const winner = played ? (match.score1 > match.score2 ? match.p1 : match.p2) : null;
+                const p1Display = p1 ? `${getQualifierInfo(p1)} - ${p1.name}` : 'A definir'; const p2Display = p2 ? `${getQualifierInfo(p2)} - ${p2.name}` : 'A definir';
+                const played = match.score1 !== null; const winner = played ? (match.score1 > match.score2 ? match.p1 : match.p2) : null;
                 return `<div class="elim-match ${played?'played':''} ${p1&&p2&&!played?'playable':''}" data-match-id="${match.id}"><div class="elim-match-player ${winner===p1?.id?'winner':''}"><span class="player-name">${p1Display}</span><span class="player-score">${played?match.score1:'-'}</span></div><div class="elim-match-player ${winner===p2?.id?'winner':''}"><span class="player-name">${p2Display}</span><span class="player-score">${played?match.score2:'-'}</span></div></div>`;
             };
             matchesToRender.forEach(match => container.innerHTML += renderMatchHTML(match));
             container.querySelectorAll('.elim-match.playable').forEach(card => card.addEventListener('click', (e) => openMatchModal(e.currentTarget.dataset.matchId)));
         }
-        function advanceWinner(match) {
+        
+        // function advanceWinner(match) {
             if (match.score1 === null) return;
             const winnerId = match.score1 > match.score2 ? match.p1 : match.p2;
             const [side, matchType, matchIndexStr] = match.id.split('-');
@@ -743,6 +670,7 @@
                 const sfPosition = (matchIndex % 2 === 0) ? 'p1' : 'p2';
                 state.elimination[side === 'A' ? 'sideA' : 'sideB'].semifinals[sfIndex][sfPosition] = winnerId;
             } else if (matchType === 'SF') {
+                // Bug corrigido aqui: matchIndex 0 vai para p1, matchIndex 1 vai para p2.
                 const finalPosition = (matchIndex === 0) ? 'p1' : 'p2';
                 state.elimination[side === 'A' ? 'sideA' : 'sideB'].final[0][finalPosition] = winnerId;
             }
@@ -757,14 +685,14 @@
             const overallFinalMatch = state.elimination.overallFinal[0];
             if (overallFinalMatch.score1 !== null) { state.currentPhase = 'results'; render(); }
         }
+
         function initResultsPhase() { renderFinalRanking(); }
         function calculateRanking() {
             const divisionPoints = POINTS_CONFIG[state.division];
             const finalA = state.elimination.sideA.final[0]; const finalB = state.elimination.sideB.final[0]; const overallFinal = state.elimination.overallFinal[0];
             const champion = overallFinal.score1 > overallFinal.score2 ? overallFinal.p1 : overallFinal.p2;
             const runnerUp = overallFinal.score1 < overallFinal.score2 ? overallFinal.p1 : overallFinal.p2;
-            const thirdPlaceA = finalA.score1 < finalA.score2 ? finalA.p1 : finalA.p2;
-            const thirdPlaceB = finalB.score1 < finalB.score2 ? finalB.p1 : finalB.p2;
+            const thirdPlaceA = finalA.score1 < finalA.score2 ? finalA.p1 : finalA.p2; const thirdPlaceB = finalB.score1 < finalB.score2 ? finalB.p1 : finalB.p2;
             const quarterfinalists = [ ...state.elimination.sideA.semifinals.map(m => m.score1 < m.score2 ? m.p1 : m.p2), ...state.elimination.sideB.semifinals.map(m => m.score1 < m.score2 ? m.p1 : m.p2) ];
             const round16participants = [ ...state.elimination.sideA.quarterfinals.map(m => m.score1 < m.score2 ? m.p1 : m.p2), ...state.elimination.sideB.quarterfinals.map(m => m.score1 < m.score2 ? m.p1 : m.p2) ];
             return state.athletes.map(athlete => {
@@ -789,70 +717,48 @@
         }
         function renderFinalRanking() {
             const ranking = calculateRanking();
-            const champion = ranking[0] || {}; const runnerup = ranking[1] || {};
-            const thirdPlaces = ranking.filter(r => r.stage === '3º Lugar');
-            const thirdA = thirdPlaces[0] || {}; const thirdB = thirdPlaces[1] || {};
+            const champion = ranking[0] || {}; const runnerup = ranking[1] || {}; const thirdPlaces = ranking.filter(r => r.stage === '3º Lugar'); const thirdA = thirdPlaces[0] || {}; const thirdB = thirdPlaces[1] || {};
             document.querySelector('#champion .athlete-name').textContent = champion.name || '-'; document.querySelector('#champion .points').textContent = `${champion.points || 0} pts`;
             document.querySelector('#runnerup .athlete-name').textContent = runnerup.name || '-'; document.querySelector('#runnerup .points').textContent = `${runnerup.points || 0} pts`;
             document.querySelector('#third-a .athlete-name').textContent = thirdA.name || '-'; document.querySelector('#third-a .points').textContent = `${thirdA.points || 0} pts`;
             document.querySelector('#third-b .athlete-name').textContent = thirdB.name || '-'; document.querySelector('#third-b .points').textContent = `${thirdB.points || 0} pts`;
-            const table = document.getElementById('finalRanking');
-            table.innerHTML = `<thead><tr><th>Pos.</th><th>Atleta</th><th>Pontos</th><th>Etapa</th></tr></thead><tbody>${ranking.map((r, i) => `<tr><td>${i+1}º</td><td>${r.name}</td><td>${r.points}</td><td>${r.stage}</td></tr>`).join('')}</tbody>`;
+            const table = document.getElementById('finalRanking'); table.innerHTML = `<thead><tr><th>Pos.</th><th>Atleta</th><th>Pontos</th><th>Etapa</th></tr></thead><tbody>${ranking.map((r, i) => `<tr><td>${i+1}º</td><td>${r.name}</td><td>${r.points}</td><td>${r.stage}</td></tr>`).join('')}</tbody>`;
         }
         function openMatchModal(matchId) {
-            let match;
-            const [idPrefix, type] = matchId.split('-');
-            const roundKeyMap = { 'QF': 'quarterfinals', 'SF': 'semifinals', 'F': 'final' };
+            let match; const [idPrefix, type] = matchId.split('-'); const roundKeyMap = { 'QF': 'quarterfinals', 'SF': 'semifinals', 'F': 'final' };
             if (GROUP_NAMES.includes(idPrefix)) { match = state.groupMatches[idPrefix].find(m => m.id === matchId); } 
             else if (idPrefix === 'A' || idPrefix === 'B') { match = state.elimination[idPrefix === 'A' ? 'sideA' : 'sideB'][roundKeyMap[type]].find(m => m.id === matchId); } 
             else if (idPrefix === 'Overall') { match = state.elimination.overallFinal.find(m => m.id === matchId); }
             if (!match || !match.p1 || !match.p2) return;
-            state.currentMatch = match;
-            const p1 = getAthleteById(match.p1), p2 = getAthleteById(match.p2);
-            document.getElementById('modalAthlete1').textContent = `${p1.name} (${p1.rank}º)`;
-            document.getElementById('modalAthlete2').textContent = `${p2.name} (${p2.rank}º)`;
-            const setsGrid = document.getElementById('setsGrid');
-            setsGrid.innerHTML = `<div>${p1.name}</div><div></div><div>${p2.name}</div>`;
-            for (let i = 0; i < 5; i++) {
-                const set = match.sets[i] || { s1: '', s2: '' };
-                setsGrid.innerHTML += `<input type="number" class="set-input" data-set="${i}" data-player="1" min="0" value="${set.s1}"><div>Set ${i+1}</div><input type="number" class="set-input" data-set="${i}" data-player="2" min="0" value="${set.s2}">`;
-            }
+            state.currentMatch = match; const p1 = getAthleteById(match.p1), p2 = getAthleteById(match.p2);
+            document.getElementById('modalAthlete1').textContent = `${p1.name} (${p1.rank}º)`; document.getElementById('modalAthlete2').textContent = `${p2.name} (${p2.rank}º)`;
+            const setsGrid = document.getElementById('setsGrid'); setsGrid.innerHTML = `<div>${p1.name}</div><div></div><div>${p2.name}</div>`;
+            for (let i = 0; i < 5; i++) { const set = match.sets[i] || { s1: '', s2: '' }; setsGrid.innerHTML += `<input type="number" class="set-input" data-set="${i}" data-player="1" min="0" value="${set.s1}"><div>Set ${i+1}</div><input type="number" class="set-input" data-set="${i}" data-player="2" min="0" value="${set.s2}">`; }
             document.getElementById('modalResult').textContent = ''; matchModal.classList.remove('hidden');
-            setsGrid.querySelectorAll('input').forEach(input => input.addEventListener('input', calculateModalResult));
-            calculateModalResult();
+            setsGrid.querySelectorAll('input').forEach(input => input.addEventListener('input', calculateModalResult)); calculateModalResult();
         }
         function calculateModalResult() {
             let score1 = 0, score2 = 0, setsPlayed = 0;
             for (let i = 0; i < 5; i++) {
-                const s1 = parseInt(document.querySelector(`.set-input[data-set="${i}"][data-player="1"]`).value) || 0;
-                const s2 = parseInt(document.querySelector(`.set-input[data-set="${i}"][data-player="2"]`).value) || 0;
+                const s1 = parseInt(document.querySelector(`.set-input[data-set="${i}"][data-player="1"]`).value) || 0; const s2 = parseInt(document.querySelector(`.set-input[data-set="${i}"][data-player="2"]`).value) || 0;
                 if (s1 === 0 && s2 === 0 && document.querySelector(`.set-input[data-set="${i}"][data-player="1"]`).value === '' && document.querySelector(`.set-input[data-set="${i}"][data-player="2"]`).value === '') continue;
-                setsPlayed++;
-                if (s1 > s2 && (s1 >= 11 && s1 - s2 >= 2)) score1++; else if (s2 > s1 && (s2 >= 11 && s2 - s1 >= 2)) score2++;
+                setsPlayed++; if (s1 > s2 && (s1 >= 11 && s1 - s2 >= 2)) score1++; else if (s2 > s1 && (s2 >= 11 && s2 - s1 >= 2)) score2++;
             }
-            document.getElementById('modalResult').textContent = `Placar: ${score1} - ${score2}`;
-            saveResultBtn.disabled = !((score1 >= 3 || score2 >= 3) && (score1 + score2 === setsPlayed));
+            document.getElementById('modalResult').textContent = `Placar: ${score1} - ${score2}`; saveResultBtn.disabled = !((score1 >= 3 || score2 >= 3) && (score1 + score2 === setsPlayed));
         }
         function saveMatchResult() {
             if (!state.currentMatch) return;
-            let score1 = 0, score2 = 0, setsPlayed = 0, validSets = true;
-            state.currentMatch.sets = [];
+            let score1 = 0, score2 = 0, setsPlayed = 0, validSets = true; state.currentMatch.sets = [];
             for (let i = 0; i < 5; i++) {
-                const s1 = parseInt(document.querySelector(`.set-input[data-set="${i}"][data-player="1"]`).value);
-                const s2 = parseInt(document.querySelector(`.set-input[data-set="${i}"][data-player="2"]`).value);
-                if (isNaN(s1) && isNaN(s2)) continue;
-                if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) { validSets = false; break; }
-                setsPlayed++;
-                state.currentMatch.sets.push({ s1, s2 });
+                const s1 = parseInt(document.querySelector(`.set-input[data-set="${i}"][data-player="1"]`).value); const s2 = parseInt(document.querySelector(`.set-input[data-set="${i}"][data-player="2"]`).value);
+                if (isNaN(s1) && isNaN(s2)) continue; if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) { validSets = false; break; }
+                setsPlayed++; state.currentMatch.sets.push({ s1, s2 });
                 if (s1 > s2 && (s1 >= 11 && s1 - s2 >= 2)) score1++; else if (s2 > s1 && (s2 >= 11 && s2 - s1 >= 2)) score2++; else validSets = false;
             }
             if (!validSets || (score1 < 3 && score2 < 3) || (score1 + score2 !== setsPlayed)) { showAlert('Resultado inválido. Verifique os pontos dos sets.'); return; }
-            state.currentMatch.score1 = score1; state.currentMatch.score2 = score2;
-            const [type] = state.currentMatch.id.split('-');
-            if (GROUP_NAMES.includes(type)) { renderGroupView(state.activeGroupTab); checkAllGroupMatchesPlayed(); } 
-            else { advanceWinner(state.currentMatch); initEliminationPhase(); }
-            saveState();
-            closeMatchModal();
+            state.currentMatch.score1 = score1; state.currentMatch.score2 = score2; const [type] = state.currentMatch.id.split('-');
+            if (GROUP_NAMES.includes(type)) { renderGroupView(state.activeGroupTab); checkAllGroupMatchesPlayed(); } else { advanceWinner(state.currentMatch); initEliminationPhase(); }
+            saveState(); closeMatchModal();
         }
         function closeMatchModal() { state.currentMatch = null; matchModal.classList.add('hidden'); }
         closeModalBtn.addEventListener('click', closeMatchModal); cancelResultBtn.addEventListener('click', closeMatchModal); saveResultBtn.addEventListener('click', saveMatchResult);
@@ -863,24 +769,118 @@
         function closeGenericModal() { genericModal.classList.add('hidden'); confirmCallback = null; }
         genericModalConfirmBtn.addEventListener('click', () => { if (confirmCallback) confirmCallback(); }); genericModalCancelBtn.addEventListener('click', closeGenericModal); genericModalClose.addEventListener('click', closeGenericModal);
         
-        // As funções de PDF não precisam de alteração, elas usam a variável 'state' que já aponta para o torneio correto.
-        const { jsPDF } = window.jspdf;
-        function showToast(message, type = 'success') { /* ...código... */ }
-        function getSafeFilename(name) { /* ...código... */ }
-        function setupPdf(title, orientation = 'landscape') { /* ...código... */ }
-        document.getElementById('exportSetupBtn').addEventListener('click', () => { /* ...código... */ });
-        document.getElementById('exportGroupsBtn').addEventListener('click', () => { /* ...código... */ });
-        document.getElementById('exportBracketBtn').addEventListener('click', () => { /* ...código... */ });
-        document.getElementById('exportRankingsBtn').addEventListener('click', () => { /* ...código... */ });
-        function formatSets(sets) { /* ...código... */ }
-        function exportCompleteReport() { /* ...código... */ }
+        // const { jsPDF } = window.jspdf;
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('pdfToast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.className = 'pdf-toast'; toast.classList.add(type);
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+        function getSafeFilename(name) { return (name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'torneio'); }
+        function setupPdf(title, orientation = 'landscape') {
+            const doc = new jsPDF({ orientation });
+            const tournamentName = state.tournamentName || 'Torneio sem nome';
+            const division = state.division;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(20).text(tournamentName, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+            doc.setFontSize(14).text(division, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+            doc.setFontSize(16).text(title, doc.internal.pageSize.getWidth() / 2, 32, { align: 'center' });
+            const pageHeight = doc.internal.pageSize.getHeight();
+            doc.setFontSize(8); doc.setTextColor(150);
+            doc.text('*Lembre-se que para qualquer relatório ser gerado com imagens, é necessária a autorização de imagem dos atletas para não violar as diretrizes de privacidade.', doc.internal.pageSize.getWidth() / 2, pageHeight - 10, { align: 'center' });
+            doc.setTextColor(0);
+            return doc;
+        }
+        document.getElementById('exportSetupBtn').addEventListener('click', () => {
+            const doc = setupPdf('Lista de Inscritos por Ranking', 'portrait'); const body = state.athletes.map(a => [a.rank, a.name]);
+            doc.autoTable({ head: [['Ranking', 'Nome do Atleta']], body: body, startY: 40 });
+            doc.save(`inscritos_${getSafeFilename(state.tournamentName)}.pdf`); showToast('Lista de inscritos gerada!');
+        });
+        document.getElementById('exportGroupsBtn').addEventListener('click', () => {
+            const doc = setupPdf('Grupos e Chaves', 'landscape'); const page_margin = 15; let startY = 40; const colGap = 70; const rowGap = 40;
+            doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+            GROUP_NAMES.forEach((name, index) => {
+                const group = state.groups[name]; const colIndex = index % 4; const rowIndex = Math.floor(index / 4);
+                const xPos = page_margin + colIndex * colGap; const currentY = startY + rowIndex * rowGap;
+                doc.text(`Grupo ${name}`, xPos, currentY); doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+                group.forEach((athlete, athleteIndex) => { doc.text(`${athlete.rank}º - ${athlete.name}`, xPos, currentY + 8 + (athleteIndex * 7)); });
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+            });
+            doc.save(`grupos_${getSafeFilename(state.tournamentName)}.pdf`); showToast('PDF dos grupos gerado!');
+        });
+        document.getElementById('exportBracketBtn').addEventListener('click', () => {
+            const doc = setupPdf('Chave Eliminatória', 'landscape'); let startY = 40;
+            const rounds = { 'Lado A - Quartas': state.elimination.sideA.quarterfinals, 'Lado A - Semifinais': state.elimination.sideA.semifinals, 'Lado A - Final': state.elimination.sideA.final, 'Lado B - Quartas': state.elimination.sideB.quarterfinals, 'Lado B - Semifinais': state.elimination.sideB.semifinals, 'Lado B - Final': state.elimination.sideB.final, 'Final Geral': state.elimination.overallFinal };
+            Object.entries(rounds).forEach(([title, matches]) => {
+                if (!matches || matches.length === 0 || !matches.some(m => m.p1)) return;
+                const body = matches.map(match => { const p1Name = match.p1 ? getAthleteById(match.p1).name : 'A definir'; const p2Name = match.p2 ? getAthleteById(match.p2).name : 'A definir'; const result = match.score1 !== null ? `${match.score1} x ${match.score2}` : '-'; return [`${p1Name}\nvs\n${p2Name}`, result]; });
+                if (startY + (body.length * 15) > doc.internal.pageSize.getHeight() - 20) { doc.addPage(); startY = 40; }
+                doc.autoTable({ head: [[title, 'Resultado']], body: body, startY: startY }); startY = doc.autoTable.previous.finalY + 15;
+            });
+            doc.save(`chave_eliminatoria_${getSafeFilename(state.tournamentName)}.pdf`); showToast('Chave eliminatória gerada!');
+        });
+        document.getElementById('exportRankingsBtn').addEventListener('click', () => {
+            const doc = setupPdf('Ranking Final', 'landscape');
+            doc.autoTable({ html: '#finalRanking', startY: 40 });
+            doc.save(`ranking_final_${getSafeFilename(state.tournamentName)}.pdf`);
+            showToast('Ranking final gerado!');
+        });
+        function formatSets(sets) { if (!sets || sets.length === 0) return ''; return sets.map(set => `${set.s1}-${set.s2}`).join(', '); }
+        function exportCompleteReport() {
+            const doc = setupPdf('Relatório Final Completo', 'landscape'); let startY = 40; const tournamentName = getSafeFilename(state.tournamentName);
+            doc.autoTable({ head: [[{ content: 'Lista de Inscritos', styles: { halign: 'center', fillColor: [52, 58, 64] } }]], startY: startY });
+            const inscritosBody = state.athletes.map(a => [a.rank, a.name]);
+            doc.autoTable({ head: [['Ranking', 'Nome do Atleta']], body: inscritosBody, startY: doc.autoTable.previous.finalY }); doc.addPage(); startY = 20;
+            doc.autoTable({ head: [[{ content: 'Composição dos Grupos', styles: { halign: 'center', fillColor: [52, 58, 64] } }]], startY: startY }); startY = doc.autoTable.previous.finalY;
+            GROUP_NAMES.forEach((name, index) => {
+                const body = state.groups[name].map(a => [`${a.rank}º`, a.name]);
+                if (startY > 150 && index % 2 === 0) { doc.addPage(); startY = 20; }
+                doc.autoTable({ head: [[{content: `Grupo ${name}`, colSpan: 2, styles: {halign: 'center'}}]], body: body, startY: startY, theme: 'grid' }); startY = doc.autoTable.previous.finalY + 10;
+            });
+            doc.addPage(); startY = 20;
+            const addResultsTable = (title, matches) => {
+                if (startY > 180) { doc.addPage(); startY = 20; }
+                const body = matches.filter(m => m.score1 !== null).map(match => {
+                    const p1 = getAthleteById(match.p1); const p2 = getAthleteById(match.p2); const result = `${match.score1} x ${match.score2}`; const scoreKey = `${Math.max(match.score1, match.score2)}-${Math.min(match.score1, match.score2)}`;
+                    const winnerBonus = POINTS_CONFIG.BONUS[scoreKey]?.winner || 0; const loserBonus = POINTS_CONFIG.BONUS[scoreKey]?.loser || 0;
+                    const winner = match.score1 > match.score2 ? p1 : p2; const loser = match.score1 < match.score2 ? p1 : p2;
+                    const points = `${winner.name}: +${winnerBonus}\n${loser.name}: +${loserBonus}`; return [`${p1.name} vs ${p2.name}`, result, formatSets(match.sets), points];
+                });
+                if (body.length > 0) {
+                    doc.autoTable({ head: [[{ content: title, styles: { halign: 'center', fillColor: [52, 58, 64] } }]], startY: startY }); startY = doc.autoTable.previous.finalY;
+                    doc.autoTable({ head: [['Partida', 'Resultado', 'Sets', 'Bônus (V/D)']], body: body, startY: startY }); startY = doc.autoTable.previous.finalY + 10;
+                }
+            };
+            GROUP_NAMES.forEach(name => addResultsTable(`Resultados - Grupo ${name}`, state.groupMatches[name]));
+            const elimMatches = { 'Lado A - Quartas': state.elimination.sideA.quarterfinals, 'Lado A - Semifinais': state.elimination.sideA.semifinals, 'Lado A - Final': state.elimination.sideA.final, 'Lado B - Quartas': state.elimination.sideB.quarterfinals, 'Lado B - Semifinais': state.elimination.sideB.semifinals, 'Lado B - Final': state.elimination.sideB.final, 'Final Geral': state.elimination.overallFinal};
+            Object.entries(elimMatches).forEach(([title, matches]) => addResultsTable(`Resultados - ${title}`, matches));
+            doc.addPage(); startY = 20; const ranking = calculateRanking();
+            const rankingBody = ranking.map((r, i) => [`${i + 1}º`, r.name, r.basePoints, r.bonusPoints, r.points, r.stage]);
+            doc.autoTable({ head: [[{ content: 'Ranking Final Detalhado', styles: { halign: 'center', fillColor: [52, 58, 64] } }]], startY: startY });
+            doc.autoTable({ head: [['Pos.', 'Atleta', 'Pts. Base', 'Pts. Bônus', 'Total', 'Etapa']], body: rankingBody, startY: doc.autoTable.previous.finalY });
+            doc.save(`relatorio_final_${tournamentName}.pdf`); showToast('Relatório final completo gerado!');
+        }
         exportCompleteBtn.addEventListener('click', exportCompleteReport);
-        function exportSummaries(rounds, title, filename) { /* ...código... */ }
-        document.getElementById('exportSumulasBtn').addEventListener('click', () => { /* ...código... */ });
-        document.getElementById('exportSumulaEliminatoriaBtn').addEventListener('click', () => { /* ...código... */ });
-        document.getElementById('exportSumulaFinalBtn').addEventListener('click', () => { /* ...código... */ });
+        function exportSummaries(rounds, title, filename) {
+            const doc = setupPdf(title, 'landscape'); let startY = 40;
+            const addSummaryToDoc = (matchTitle, match) => {
+                if (!match || !match.p1) return; if (startY > 150) { doc.addPage(); startY = 20; }
+                const p1 = getAthleteById(match.p1); const p2 = getAthleteById(match.p2); const body = match.sets.map((set, i) => [`Set ${i + 1}`, set.s1, set.s2]);
+                doc.autoTable({ head: [[{ content: matchTitle, colSpan: 3, styles: { halign: 'center', fillColor: [52, 58, 64] } }]], body: [[`${p1.name} (${p1.rank}º)`, 'vs', `${p2.name} (${p2.rank}º)`]], startY: startY, theme: 'plain' });
+                startY = doc.autoTable.previous.finalY;
+                doc.autoTable({ head: [['Set', p1.name, p2.name]], body: body, startY: startY, theme: 'grid' }); startY = doc.autoTable.previous.finalY;
+                doc.autoTable({ body: [[{content: `Resultado Final: ${match.score1} - ${match.score2}`, colSpan: 3, styles: { halign: 'center' }}]], startY: startY }); startY = doc.autoTable.previous.finalY + 15;
+            };
+            if (rounds.isGroup) { GROUP_NAMES.forEach(name => { state.groupMatches[name].filter(m => m.score1 !== null).forEach(match => addSummaryToDoc(`Grupo ${name}`, match)); }); }
+            else if (rounds.isFinal) { state.elimination.overallFinal.filter(m => m.score1 !== null).forEach(match => addSummaryToDoc('Final Geral', match)); }
+            else { Object.entries(rounds).forEach(([title, matches]) => { matches.filter(m => m.score1 !== null).forEach(match => addSummaryToDoc(title, match)); }); }
+            doc.save(`${filename}_${getSafeFilename(state.tournamentName)}.pdf`); showToast(`${title} gerado!`);
+        }
+        document.getElementById('exportSumulasBtn').addEventListener('click', () => exportSummaries({isGroup: true}, 'Súmulas - Fase de Grupos', 'sumulas_grupos'));
+        document.getElementById('exportSumulaEliminatoriaBtn').addEventListener('click', () => exportSummaries({ 'Lado A - Quartas': state.elimination.sideA.quarterfinals, 'Lado A - Semifinais': state.elimination.sideA.semifinals, 'Lado A - Final': state.elimination.sideA.final, 'Lado B - Quartas': state.elimination.sideB.quarterfinals, 'Lado B - Semifinais': state.elimination.sideB.semifinals, 'Lado B - Final': state.elimination.sideB.final }, 'Súmulas - Eliminatórias', 'sumulas_eliminatorias'));
+        document.getElementById('exportSumulaFinalBtn').addEventListener('click', () => exportSummaries({isFinal: true}, 'Súmula da Final', 'sumulas_finais'));
 
-        // Inicializa a autenticação ao carregar a página
         initAuth();
     });
     </script>
