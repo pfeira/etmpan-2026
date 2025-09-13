@@ -75,6 +75,7 @@
         .round h4 { text-align: center; font-size: 1.5rem; color: var(--secondary-color); }
         .elim-match { background-color: #fff; border-radius: var(--border-radius); border: 1px solid var(--border-color); cursor: pointer; box-shadow: var(--shadow-sm); }
         .elim-match.played { cursor: default; }
+        .elim-match.playable { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.1); }
         .elim-match.winner .player-name { font-weight: bold; color: var(--success-color); }
         .elim-match-player { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; }
         .elim-match-player:first-child { border-bottom: 1px solid var(--border-color); }
@@ -105,7 +106,7 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <img src="etmpan1.jpg" alt="Logo ETMPAN" style="width: 100px; height: auto; margin-bottom: 1rem; border-radius: 8px;">
+            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/f4695445-f933-40df-b982-cc7e7f46add6.png" alt="Logo ETMPAN" style="width: 100px; height: auto; margin-bottom: 1rem; border-radius: 8px;">
             <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">Acesso ao Gestor</h2>
             <input type="text" id="username" class="form-control" placeholder="Usuário" style="margin-bottom: 1rem;" autocomplete="username">
             <input type="password" id="password" class="form-control" placeholder="Senha" style="margin-bottom: 1rem;" autocomplete="current-password">
@@ -118,7 +119,7 @@
         <div class="container">
             <aside class="sidebar">
                  <div class="text-center" style="margin-bottom: 1rem;">
-                    <img src="etmpan1.jpg" alt="Logo ETMPAN" style="width: 112px; height: auto; border-radius: .5rem; margin: 0 auto;">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/de2fca6e-48d5-4e6f-a014-fc18ac93d4b1.png" alt="Logo ETMPAN" style="width: 112px; height: auto; border-radius: .5rem; margin: 0 auto;">
                     <h1 style="font-size: 2.25rem; font-weight: 700; letter-spacing: .05em; margin-top: .5rem;">GESTOR 08</h1>
                 </div>
                 <div class="sidebar-section">
@@ -253,7 +254,7 @@
             });
         }
         
-        const APP_VERSION = "2.7"; 
+        const APP_VERSION = "2.9"; 
         let appState = {}; 
         let state = {}; 
 
@@ -632,6 +633,9 @@
         }
         
         function renderEliminationPhase() {
+            console.log('🏆 RENDERIZANDO ELIMINATÓRIAS');
+            console.log('Estado das eliminatórias:', state.elimination);
+            
             renderEliminationRound('sideA', 'quarterfinals', 'matchesA-QF'); 
             renderEliminationRound('sideA', 'semifinals', 'matchesA-SF'); 
             renderEliminationRound('sideA', 'final', 'matchesA-F');
@@ -642,57 +646,94 @@
         }
         
         function generateEliminationBracket() {
+            console.log('🔧 GERANDO CHAVE ELIMINATÓRIA');
+            
             const qualifiers = [];
             GROUP_NAMES.forEach(groupName => { 
                 calculateStandings(groupName); 
-                qualifiers.push({ ...state.standings[groupName][0], pos: `1º ${groupName}` }); 
-                qualifiers.push({ ...state.standings[groupName][1], pos: `2º ${groupName}` }); 
+                const standings = state.standings[groupName];
+                if (standings && standings.length >= 2) {
+                    qualifiers.push({ ...standings[0], pos: `1º ${groupName}` }); 
+                    qualifiers.push({ ...standings[1], pos: `2º ${groupName}` }); 
+                }
             });
             
+            console.log('✅ Classificados:', qualifiers.map(q => `${q.pos}: ${getAthleteById(q.athleteId)?.name}`));
+            
             state.elimination.qualifiers = qualifiers;
-            const getQ = (pos) => qualifiers.find(q => q.pos === pos).athleteId;
+            const getQ = (pos) => {
+                const qualifier = qualifiers.find(q => q.pos === pos);
+                if (!qualifier) {
+                    console.error(`❌ Classificado não encontrado: ${pos}`);
+                    return null;
+                }
+                return qualifier.athleteId;
+            };
             
+            // QUARTAS DE FINAL - LADO A
             state.elimination.sideA.quarterfinals = [ 
-                { id: 'A-QF-1', p1: getQ('1º A'), p2: getQ('2º H') }, 
-                { id: 'A-QF-2', p1: getQ('1º G'), p2: getQ('2º B') }, 
-                { id: 'A-QF-3', p1: getQ('1º D'), p2: getQ('2º E') }, 
-                { id: 'A-QF-4', p1: getQ('1º F'), p2: getQ('2º C') } 
-            ].map(m => ({ ...m, score1: null, score2: null, sets: [] }));
+                { id: 'A-QF-1', p1: getQ('1º A'), p2: getQ('2º H'), score1: null, score2: null, sets: [] },
+                { id: 'A-QF-2', p1: getQ('1º G'), p2: getQ('2º B'), score1: null, score2: null, sets: [] },
+                { id: 'A-QF-3', p1: getQ('1º D'), p2: getQ('2º E'), score1: null, score2: null, sets: [] },
+                { id: 'A-QF-4', p1: getQ('1º F'), p2: getQ('2º C'), score1: null, score2: null, sets: [] }
+            ];
             
+            // QUARTAS DE FINAL - LADO B
             state.elimination.sideB.quarterfinals = [ 
-                { id: 'B-QF-1', p1: getQ('1º B'), p2: getQ('2º G') }, 
-                { id: 'B-QF-2', p1: getQ('1º H'), p2: getQ('2º A') }, 
-                { id: 'B-QF-3', p1: getQ('1º C'), p2: getQ('2º F') }, 
-                { id: 'B-QF-4', p1: getQ('1º E'), p2: getQ('2º D') } 
-            ].map(m => ({ ...m, score1: null, score2: null, sets: [] }));
+                { id: 'B-QF-1', p1: getQ('1º B'), p2: getQ('2º G'), score1: null, score2: null, sets: [] },
+                { id: 'B-QF-2', p1: getQ('1º H'), p2: getQ('2º A'), score1: null, score2: null, sets: [] },
+                { id: 'B-QF-3', p1: getQ('1º C'), p2: getQ('2º F'), score1: null, score2: null, sets: [] },
+                { id: 'B-QF-4', p1: getQ('1º E'), p2: getQ('2º D'), score1: null, score2: null, sets: [] }
+            ];
             
-            state.elimination.sideA.semifinals = Array(2).fill(null).map((_, i) => ({ 
-                id: `A-SF-${i+1}`, p1: null, p2: null, score1: null, score2: null, sets: [] 
-            }));
+            // SEMIFINAIS (inicialmente vazias)
+            state.elimination.sideA.semifinals = [
+                { id: 'A-SF-1', p1: null, p2: null, score1: null, score2: null, sets: [] },
+                { id: 'A-SF-2', p1: null, p2: null, score1: null, score2: null, sets: [] }
+            ];
             
-            state.elimination.sideB.semifinals = Array(2).fill(null).map((_, i) => ({ 
-                id: `B-SF-${i+1}`, p1: null, p2: null, score1: null, score2: null, sets: [] 
-            }));
+            state.elimination.sideB.semifinals = [
+                { id: 'B-SF-1', p1: null, p2: null, score1: null, score2: null, sets: [] },
+                { id: 'B-SF-2', p1: null, p2: null, score1: null, score2: null, sets: [] }
+            ];
             
-            state.elimination.sideA.final = [{ 
-                id: `A-F-1`, p1: null, p2: null, score1: null, score2: null, sets: [] 
-            }];
+            // FINAIS (inicialmente vazias)
+            state.elimination.sideA.final = [
+                { id: 'A-F-1', p1: null, p2: null, score1: null, score2: null, sets: [] }
+            ];
             
-            state.elimination.sideB.final = [{ 
-                id: `B-F-1`, p1: null, p2: null, score1: null, score2: null, sets: [] 
-            }];
+            state.elimination.sideB.final = [
+                { id: 'B-F-1', p1: null, p2: null, score1: null, score2: null, sets: [] }
+            ];
             
-            state.elimination.overallFinal = [{ 
-                id: `Overall-F-1`, p1: null, p2: null, score1: null, score2: null, sets: [] 
-            }];
+            // FINAL GERAL (inicialmente vazia)
+            state.elimination.overallFinal = [
+                { id: 'Overall-F-1', p1: null, p2: null, score1: null, score2: null, sets: [] }
+            ];
+            
+            console.log('🏆 Chave eliminatória gerada com sucesso');
+            console.log('Lado A - Quartas:', state.elimination.sideA.quarterfinals.map(m => `${m.id}: ${getAthleteById(m.p1)?.name} vs ${getAthleteById(m.p2)?.name}`));
+            console.log('Lado B - Quartas:', state.elimination.sideB.quarterfinals.map(m => `${m.id}: ${getAthleteById(m.p1)?.name} vs ${getAthleteById(m.p2)?.name}`));
         }
         
         function renderEliminationRound(side, roundKey, containerId) {
-            const container = document.getElementById(containerId); 
+            const container = document.getElementById(containerId);
+            if (!container) {
+                console.error(`❌ Container não encontrado: ${containerId}`);
+                return;
+            }
+            
             container.innerHTML = '';
             const matchesToRender = side ? state.elimination[side][roundKey] : state.elimination[roundKey];
             
-            matchesToRender.forEach(match => {
+            if (!matchesToRender || matchesToRender.length === 0) {
+                console.warn(`⚠️ Nenhuma partida encontrada para ${side ? side + '.' + roundKey : roundKey}`);
+                return;
+            }
+            
+            console.log(`🎯 Renderizando ${matchesToRender.length} partida(s) em ${containerId}`);
+            
+            matchesToRender.forEach((match, index) => {
                 const p1 = match.p1 ? getAthleteById(match.p1) : null; 
                 const p2 = match.p2 ? getAthleteById(match.p2) : null;
                 
@@ -707,9 +748,10 @@
                 
                 const played = match.score1 !== null; 
                 const winner = played ? (match.score1 > match.score2 ? match.p1 : match.p2) : null;
+                const canPlay = p1 && p2 && !played;
                 
                 const matchEl = document.createElement('div');
-                matchEl.className = `elim-match ${played ? 'played' : ''} ${p1 && p2 && !played ? 'playable' : ''}`;
+                matchEl.className = `elim-match ${played ? 'played' : ''} ${canPlay ? 'playable' : ''}`;
                 matchEl.innerHTML = `
                     <div class="elim-match-player ${winner===p1?.id?'winner':''}">
                         <span class="player-name">${p1Display}</span>
@@ -719,47 +761,101 @@
                         <span class="player-name">${p2Display}</span>
                         <span>${played?match.score2:'-'}</span>
                     </div>`;
-                    
-                if (p1 && p2 && !played) { 
-                    matchEl.onclick = () => openMatchModal(match.id); 
+                
+                if (canPlay) { 
+                    matchEl.onclick = () => {
+                        console.log(`🎮 Abrindo modal para partida: ${match.id}`);
+                        openMatchModal(match.id);
+                    };
+                    console.log(`✅ Partida ${match.id} disponível para jogo: ${p1.name} vs ${p2.name}`);
+                } else if (!p1 || !p2) {
+                    console.log(`⏳ Partida ${match.id} aguardando definição de jogadores`);
+                } else if (played) {
+                    console.log(`🏁 Partida ${match.id} já jogada: ${match.score1}-${match.score2}`);
                 }
+                
                 container.appendChild(matchEl);
             });
         }
         
+        // FUNÇÃO CORRIGIDA E AUDITADA
         function advanceWinner(match) {
-            if (match.score1 === null) return;
+            if (match.score1 === null) {
+                console.error('❌ Tentativa de avançar partida sem resultado');
+                return;
+            }
+            
             const winnerId = match.score1 > match.score2 ? match.p1 : match.p2;
+            const loserId = match.score1 < match.score2 ? match.p1 : match.p2;
+            const winnerName = getAthleteById(winnerId)?.name;
             const [side, matchType, matchIndexStr] = match.id.split('-');
             const matchIndex = parseInt(matchIndexStr) - 1;
             
+            console.log(`🏆 AVANÇANDO VENCEDOR: ${winnerName} (${winnerId}) da partida ${match.id}`);
+            
             if (matchType === 'QF') {
+                // QUARTAS DE FINAL -> SEMIFINAIS
                 const sfIndex = Math.floor(matchIndex / 2); 
                 const sfPosition = (matchIndex % 2 === 0) ? 'p1' : 'p2';
-                if (side === 'A' || side === 'B') {
-                    state.elimination[side === 'A' ? 'sideA' : 'sideB'].semifinals[sfIndex][sfPosition] = winnerId;
+                
+                if (side === 'A') {
+                    state.elimination.sideA.semifinals[sfIndex][sfPosition] = winnerId;
+                    console.log(`✅ Lado A - SF${sfIndex + 1} ${sfPosition}: ${winnerName}`);
+                } else if (side === 'B') {
+                    state.elimination.sideB.semifinals[sfIndex][sfPosition] = winnerId;
+                    console.log(`✅ Lado B - SF${sfIndex + 1} ${sfPosition}: ${winnerName}`);
                 }
+                
             } else if (matchType === 'SF') {
+                // SEMIFINAIS -> FINAL DO LADO
                 const finalPosition = (matchIndex === 0) ? 'p1' : 'p2';
-                if (side === 'A' || side === 'B') {
-                    state.elimination[side === 'A' ? 'sideA' : 'sideB'].final[0][finalPosition] = winnerId;
+                
+                if (side === 'A') {
+                    state.elimination.sideA.final[0][finalPosition] = winnerId;
+                    console.log(`✅ Lado A - Final ${finalPosition}: ${winnerName}`);
+                } else if (side === 'B') {
+                    state.elimination.sideB.final[0][finalPosition] = winnerId;
+                    console.log(`✅ Lado B - Final ${finalPosition}: ${winnerName}`);
                 }
+                
+            } else if (matchType === 'F' && side !== 'Overall') {
+                // FINAL DO LADO -> DEFINIR FINAL GERAL
+                console.log(`🏆 Final do lado ${side} concluída!`);
+                checkAndSetOverallFinal();
             }
             
-            const finalA = state.elimination.sideA.final[0];
-            const finalB = state.elimination.sideB.final[0];
-            
-            if (finalA && finalB && finalA.score1 !== null && finalB.score1 !== null && !state.elimination.overallFinal[0].p1) {
-                state.elimination.overallFinal[0].p1 = finalA.score1 > finalA.score2 ? finalA.p1 : finalA.p2;
-                state.elimination.overallFinal[0].p2 = finalB.score1 > finalB.score2 ? finalB.p1 : finalB.p2;
-            }
-            
-            if (state.elimination.overallFinal[0].score1 !== null) { 
-                state.currentPhase = 'results'; 
+            // Verifica se é a final geral
+            if (match.id === 'Overall-F-1') {
+                console.log('🎊 TORNEIO FINALIZADO - Avançando para resultados');
+                state.currentPhase = 'results';
             }
             
             saveState(); 
             render();
+        }
+        
+        function checkAndSetOverallFinal() {
+            const finalA = state.elimination.sideA.final[0];
+            const finalB = state.elimination.sideB.final[0];
+            
+            console.log('🔍 Verificando finais dos lados:');
+            console.log('Final A:', finalA);
+            console.log('Final B:', finalB);
+            
+            if (finalA && finalA.score1 !== null && finalB && finalB.score1 !== null) {
+                const winnerA = finalA.score1 > finalA.score2 ? finalA.p1 : finalA.p2;
+                const winnerB = finalB.score1 > finalB.score2 ? finalB.p1 : finalB.p2;
+                
+                state.elimination.overallFinal[0].p1 = winnerA;
+                state.elimination.overallFinal[0].p2 = winnerB;
+                
+                const nameA = getAthleteById(winnerA)?.name;
+                const nameB = getAthleteById(winnerB)?.name;
+                
+                console.log(`🔥 FINAL GERAL DEFINIDA: ${nameA} vs ${nameB}`);
+            } else {
+                console.log('⏳ Aguardando conclusão de ambas as finais dos lados');
+            }
         }
         
         function renderResultsPhase() {
@@ -843,6 +939,8 @@
         }
         
         function openMatchModal(matchId) {
+            console.log(`🎮 Abrindo modal para partida: ${matchId}`);
+            
             let match; 
             const [idPrefix, type] = matchId.split('-'); 
             const roundKeyMap = { 'QF': 'quarterfinals', 'SF': 'semifinals', 'F': 'final' };
@@ -855,12 +953,22 @@
                 match = state.elimination.overallFinal.find(m => m.id === matchId); 
             }
             
-            if (!match || !match.p1 || !match.p2) return;
+            if (!match) {
+                console.error(`❌ Partida não encontrada: ${matchId}`);
+                return;
+            }
+            
+            if (!match.p1 || !match.p2) {
+                console.error(`❌ Partida sem jogadores definidos: ${matchId}`);
+                return;
+            }
             
             state.currentMatch = match; 
             const modal = document.getElementById('matchModal'); 
             const modalBody = document.getElementById('matchModalBody');
             const p1 = getAthleteById(match.p1), p2 = getAthleteById(match.p2);
+            
+            console.log(`✅ Modal aberto para: ${p1.name} vs ${p2.name}`);
             
             let setsHTML = '';
             for (let i = 0; i < 5; i++) {
@@ -925,11 +1033,15 @@
             state.currentMatch.score1 = score1; 
             state.currentMatch.score2 = score2;
             
+            console.log(`💾 Salvando resultado: ${score1}-${score2} para partida ${state.currentMatch.id}`);
+            
             const [type] = state.currentMatch.id.split('-');
             if (GROUP_NAMES.includes(type)) { 
+                console.log('📊 Partida de grupo salva - atualizando classificação');
                 saveState(); 
                 render(); 
             } else { 
+                console.log('🏆 Partida eliminatória salva - avançando vencedor');
                 advanceWinner(state.currentMatch); 
             }
             closeModal();
@@ -1048,7 +1160,7 @@
                 }, 'Súmulas - Eliminatórias', 'sumulas_eliminatorias');
             });
             
-            document.getElementById('exportSumulaFinalBtn').addEventListener('click', () => {
+            document.getElementById('exportSululaFinalBtn').addEventListener('click', () => {
                 exportSummaries({isFinal: true}, 'Súmula da Final', 'sumulas_finais');
             });
         }
