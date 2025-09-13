@@ -105,10 +105,10 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <img src="etmpan1.jpg.jpg" alt="Logo ETMPAN" style="width: 100px; height: auto; margin-bottom: 1rem; border-radius: 8px;">
+            <img src="etmpan1.jpg" alt="Logo ETMPAN" style="width: 100px; height: auto; margin-bottom: 1rem; border-radius: 8px;">
             <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">Acesso ao Gestor</h2>
-            <input type="text" id="username" class="form-control" placeholder="Usuário" style="margin-bottom: 1rem;">
-            <input type="password" id="password" class="form-control" placeholder="Senha" style="margin-bottom: 1rem;">
+            <input type="text" id="username" class="form-control" placeholder="Usuário" style="margin-bottom: 1rem;" autocomplete="username">
+            <input type="password" id="password" class="form-control" placeholder="Senha" style="margin-bottom: 1rem;" autocomplete="current-password">
             <button id="loginBtn" class="btn btn--primary" style="width: 100%;">Entrar</button>
             <p id="login-error"></p>
         </div>
@@ -118,7 +118,7 @@
         <div class="container">
             <aside class="sidebar">
                  <div class="text-center" style="margin-bottom: 1rem;">
-                    <img src="etmpan1.jpg.jpg" alt="Logo ETMPAN" style="width: 112px; height: auto; border-radius: .5rem; margin: 0 auto;">
+                    <img src="etmpan1.jpg" alt="Logo ETMPAN" style="width: 112px; height: auto; border-radius: .5rem; margin: 0 auto;">
                     <h1 style="font-size: 2.25rem; font-weight: 700; letter-spacing: .05em; margin-top: .5rem;">GESTOR 08</h1>
                 </div>
                 <div class="sidebar-section">
@@ -254,7 +254,7 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            const APP_VERSION = "2.5"; 
+            const APP_VERSION = "2.6"; 
             let appState = {}; 
             let state = {}; 
 
@@ -294,6 +294,30 @@
             const tournamentNameInput = document.getElementById('tournamentName');
             const resetBtn = document.getElementById('resetBtn');
 
+            function handleLogin() {
+                const userInput = document.getElementById('username');
+                const passInput = document.getElementById('password');
+                const errorMsg = document.getElementById('login-error');
+                const user = userInput.value.trim();
+                const pass = passInput.value.trim();
+                errorMsg.textContent = '';
+
+                if (!user || !pass) {
+                    errorMsg.textContent = 'Por favor, preencha usuário e senha.';
+                    return;
+                }
+
+                if (user === 'admin' && pass === 'admin123') {
+                    appState.loggedIn = true;
+                    saveState();
+                    initAuth();
+                } else {
+                    errorMsg.textContent = 'Usuário ou senha inválidos.';
+                    passInput.value = '';
+                    passInput.focus();
+                }
+            }
+            
             function initAuth() {
                 loadState(); 
                 if (appState.loggedIn) {
@@ -303,19 +327,33 @@
                 } else {
                     loginScreen.classList.remove('hidden');
                     appContainer.classList.add('hidden');
+                    document.getElementById('username').focus();
                 }
             }
-            function handleLogin() {
-                const user = document.getElementById('username').value;
-                const pass = document.getElementById('password').value;
-                if (user === 'admin' && pass === 'admin123') {
-                    appState.loggedIn = true;
-                    saveState();
-                    initAuth();
-                } else {
-                    document.getElementById('login-error').textContent = 'Usuário ou senha inválidos.';
-                }
+            
+            function init() {
+                divisionSelector.addEventListener('change', switchDivision);
+                tournamentNameInput.addEventListener('input', updateTournamentName);
+                logoutBtn.addEventListener('click', handleLogout);
+                resetBtn.addEventListener('click', resetCurrentTournament);
+                initPdfButtons();
+                render();
             }
+
+            function render() {
+                state = appState.tournaments[appState.activeDivision];
+                divisionSelector.value = appState.activeDivision;
+                tournamentNameInput.value = state.tournamentName;
+                updatePhaseUI();
+                switch (state.currentPhase) {
+                    case 'setup': renderSetupPhase(); break;
+                    case 'groups': renderGroupsPhase(); break;
+                    case 'elimination': renderEliminationPhase(); break;
+                    case 'results': renderResultsPhase(); break;
+                }
+                updatePdfButtons();
+            }
+
             function handleLogout() { appState.loggedIn = false; saveState(); initAuth(); }
             function saveState() { localStorage.setItem('gestorAppState', JSON.stringify(appState)); }
             function loadState() {
@@ -335,40 +373,8 @@
                     }
                 );
             }
-
-            function init() {
-                divisionSelector.removeEventListener('change', switchDivision);
-                tournamentNameInput.removeEventListener('input', updateTournamentName);
-                logoutBtn.removeEventListener('click', handleLogout);
-                resetBtn.removeEventListener('click', resetCurrentTournament);
-
-                divisionSelector.addEventListener('change', switchDivision);
-                tournamentNameInput.addEventListener('input', updateTournamentName);
-                logoutBtn.addEventListener('click', handleLogout);
-                resetBtn.addEventListener('click', resetCurrentTournament);
-                
-                initPdfButtons();
-                render();
-            }
             function switchDivision(e) { appState.activeDivision = e.target.value; saveState(); init(); }
             function updateTournamentName(e) { state.tournamentName = e.target.value; saveState(); }
-
-            function render() {
-                state = appState.tournaments[appState.activeDivision];
-                divisionSelector.value = appState.activeDivision;
-                tournamentNameInput.value = state.tournamentName;
-                
-                updatePhaseUI();
-                
-                switch (state.currentPhase) {
-                    case 'setup': renderSetupPhase(); break;
-                    case 'groups': renderGroupsPhase(); break;
-                    case 'elimination': renderEliminationPhase(); break;
-                    case 'results': renderResultsPhase(); break;
-                }
-                updatePdfButtons();
-            }
-            
             function updatePhaseUI() {
                 const phaseIndicator = document.querySelector('.phase-indicator');
                 phaseIndicator.querySelectorAll('.phase').forEach(phaseEl => {
@@ -385,7 +391,6 @@
                     if (content.id === `${state.currentPhase}-phase`) { content.classList.remove('hidden'); }
                 });
             }
-
             function updatePdfButtons() {
                 const isSetupDone = state.athletes.length === NUM_ATHLETES;
                 const areGroupsDone = Object.keys(state.groups).length > 0;
@@ -400,20 +405,16 @@
                 document.getElementById('exportRankingsBtn').disabled = !isEliminationDone;
                 document.getElementById('exportCompleteBtn').disabled = !isEliminationDone;
             }
-
             function getAthleteById(id) { return state.athletes.find(a => a.id === id); }
-            
             function renderSetupPhase() {
                 const athletesGrid = document.getElementById('athletesGrid');
                 const generateGroupsBtn = document.getElementById('generateGroupsBtn');
                 const groupsDisplay = document.getElementById('groupsDisplay');
-                
                 athletesGrid.innerHTML = '';
                 for (let i = 0; i < NUM_ATHLETES; i++) {
                     const athlete = state.athletes.find(a => a.rank === i + 1);
                     athletesGrid.innerHTML += `<div class="athlete-input-group"><span>${i + 1}</span><input type="text" class="athlete-name-input" data-rank="${i + 1}" placeholder="Nome do Atleta ${i + 1}" value="${athlete ? athlete.name : ''}"></div>`;
                 }
-                
                 generateGroupsBtn.onclick = () => {
                     state.athletes = [];
                     document.querySelectorAll('.athlete-name-input').forEach(input => {
@@ -421,7 +422,6 @@
                     });
                     generateGroups(); renderSetupPhase(); updatePdfButtons(); saveState();
                 };
-
                 if (Object.keys(state.groups).length > 0) {
                     renderGroupsDisplay();
                     groupsDisplay.classList.remove('hidden');
@@ -431,7 +431,6 @@
                     generateGroupsBtn.classList.remove('hidden');
                 }
             }
-
             function generateGroups() {
                 const getByRank = (rank) => state.athletes.find(a => a.rank === rank);
                 state.groups = {
@@ -439,7 +438,6 @@
                     'E': [getByRank(5), getByRank(12), getByRank(21)], 'F': [getByRank(6), getByRank(11), getByRank(22)], 'G': [getByRank(7), getByRank(10), getByRank(23)], 'H': [getByRank(8), getByRank(9), getByRank(24)],
                 };
             }
-
             function renderGroupsDisplay() {
                 const groupsGrid = document.getElementById('groupsGrid');
                 const startTournamentBtn = document.getElementById('startTournamentBtn');
@@ -454,13 +452,13 @@
                     render();
                 };
             }
-
             function renderGroupsPhase() {
                 renderGroupTabs();
                 renderGroupView(state.activeGroupTab);
                 const finishBtn = document.getElementById('finishGroupsBtn');
                 if (Object.keys(state.groupMatches).length > 0) {
-                    const allPlayed = Object.values(state.groupMatches).flat().every(m => m.score1 !== null);
+                    const allMatches = Object.values(state.groupMatches).flat();
+                    const allPlayed = allMatches.length > 0 && allMatches.every(m => m.score1 !== null);
                     finishBtn.classList.toggle('hidden', !allPlayed);
                 } else {
                     finishBtn.classList.add('hidden');
@@ -472,7 +470,6 @@
                     render();
                 };
             }
-            
             function renderGroupTabs() {
                 const groupTabsContainer = document.getElementById('groupTabs');
                 groupTabsContainer.innerHTML = '';
@@ -484,7 +481,6 @@
                     groupTabsContainer.appendChild(tab);
                 });
             }
-
             function renderGroupView(groupName) {
                 const groupMatchesContainer = document.getElementById('groupMatches');
                 const groupStandingsContainer = document.getElementById('groupStandings');
@@ -503,7 +499,6 @@
                 const standings = state.standings[groupName] || [];
                 groupStandingsContainer.innerHTML = `<h4>Classificação</h4><table class="standings-table"><thead><tr><th>Atleta</th><th>J</th><th>V</th><th>D</th><th>SV</th><th>SP</th><th>SG</th></tr></thead><tbody>${standings.map(s => { const athlete = getAthleteById(s.athleteId); return `<tr><td>${athlete.name}</td><td>${s.played}</td><td>${s.wins}</td><td>${s.losses}</td><td>${s.setsWon}</td><td>${s.setsLost}</td><td>${s.setsWon - s.setsLost}</td></tr>`; }).join('')}</tbody></table>`;
             }
-
             function calculateStandings(groupName) {
                 if(!state.standings[groupName]) return;
                 const matches = state.groupMatches[groupName];
@@ -523,11 +518,15 @@
                     return getAthleteById(a.athleteId).rank - getAthleteById(b.athleteId).rank;
                 });
             }
-
             function generateGroupMatchesAndStandings() {
                 state.groupMatches = {}; state.standings = {};
                 GROUP_NAMES.forEach(groupName => {
                     const athletes = state.groups[groupName];
+                    if (!athletes || athletes.length < 3) {
+                        state.groupMatches[groupName] = [];
+                        state.standings[groupName] = [];
+                        return;
+                    }
                     state.groupMatches[groupName] = [
                         { id: `${groupName}-1`, p1: athletes[0].id, p2: athletes[2].id, score1: null, score2: null, sets: [] },
                         { id: `${groupName}-2`, p1: athletes[1].id, p2: athletes[2].id, score1: null, score2: null, sets: [] },
@@ -536,13 +535,11 @@
                     state.standings[groupName] = athletes.map(a => ({ athleteId: a.id, played: 0, wins: 0, losses: 0, setsWon: 0, setsLost: 0 }));
                 });
             }
-            
             function renderEliminationPhase() {
                 renderEliminationRound('sideA', 'quarterfinals', 'matchesA-QF'); renderEliminationRound('sideA', 'semifinals', 'matchesA-SF'); renderEliminationRound('sideA', 'final', 'matchesA-F');
                 renderEliminationRound('sideB', 'quarterfinals', 'matchesB-QF'); renderEliminationRound('sideB', 'semifinals', 'matchesB-SF'); renderEliminationRound('sideB', 'final', 'matchesB-F');
                 renderEliminationRound(null, 'overallFinal', 'matchesFinal');
             }
-
             function generateEliminationBracket() {
                 const qualifiers = [];
                 GROUP_NAMES.forEach(groupName => { calculateStandings(groupName); qualifiers.push({ ...state.standings[groupName][0], pos: `1º ${groupName}` }); qualifiers.push({ ...state.standings[groupName][1], pos: `2º ${groupName}` }); });
@@ -556,7 +553,6 @@
                 state.elimination.sideB.final = [{ id: `B-F-1`, p1: null, p2: null, score1: null, score2: null, sets: [] }];
                 state.elimination.overallFinal = [{ id: `Overall-F-1`, p1: null, p2: null, score1: null, score2: null, sets: [] }];
             }
-
             function renderEliminationRound(side, roundKey, containerId) {
                 const container = document.getElementById(containerId); container.innerHTML = '';
                 const matchesToRender = side ? state.elimination[side][roundKey] : state.elimination[roundKey];
@@ -572,7 +568,6 @@
                     container.appendChild(matchEl);
                 });
             }
-
             function advanceWinner(match) {
                 if (match.score1 === null) return;
                 const winnerId = match.score1 > match.score2 ? match.p1 : match.p2;
@@ -580,20 +575,24 @@
                 const matchIndex = parseInt(matchIndexStr) - 1;
                 if (matchType === 'QF') {
                     const sfIndex = Math.floor(matchIndex / 2); const sfPosition = (matchIndex % 2 === 0) ? 'p1' : 'p2';
-                    state.elimination[side === 'A' ? 'sideA' : 'sideB'].semifinals[sfIndex][sfPosition] = winnerId;
+                    if (side === 'A' || side === 'B') {
+                        state.elimination[side === 'A' ? 'sideA' : 'sideB'].semifinals[sfIndex][sfPosition] = winnerId;
+                    }
                 } else if (matchType === 'SF') {
                     const finalPosition = (matchIndex === 0) ? 'p1' : 'p2';
-                    state.elimination[side === 'A' ? 'sideA' : 'sideB'].final[0][finalPosition] = winnerId;
+                    if (side === 'A' || side === 'B') {
+                        state.elimination[side === 'A' ? 'sideA' : 'sideB'].final[0][finalPosition] = winnerId;
+                    }
                 }
-                const finalA = state.elimination.sideA.final[0]; const finalB = state.elimination.sideB.final[0];
-                if (finalA.score1 !== null && finalB.score1 !== null && !state.elimination.overallFinal[0].p1) {
+                const finalA = state.elimination.sideA.final[0];
+                const finalB = state.elimination.sideB.final[0];
+                if (finalA && finalB && finalA.score1 !== null && finalB.score1 !== null && !state.elimination.overallFinal[0].p1) {
                     state.elimination.overallFinal[0].p1 = finalA.score1 > finalA.score2 ? finalA.p1 : finalA.p2;
                     state.elimination.overallFinal[0].p2 = finalB.score1 > finalB.score2 ? finalB.p1 : finalB.p2;
                 }
                 if (state.elimination.overallFinal[0].score1 !== null) { state.currentPhase = 'results'; }
                 saveState(); render();
             }
-            
             function renderResultsPhase() {
                 const ranking = calculateRanking();
                 const champion = ranking[0] || {}; const runnerup = ranking[1] || {};
@@ -606,7 +605,6 @@
                 const table = document.getElementById('finalRanking');
                 table.innerHTML = `<thead><tr><th>Pos.</th><th>Atleta</th><th>Pontos</th><th>Etapa</th></tr></thead><tbody>${ranking.map((r, i) => `<tr><td>${i+1}º</td><td>${r.name}</td><td>${r.points}</td><td>${r.stage}</td></tr>`).join('')}</tbody>`;
             }
-
             function calculateRanking() {
                 const finalA = state.elimination.sideA.final[0]; const finalB = state.elimination.sideB.final[0]; const overallFinal = state.elimination.overallFinal[0];
                 if(overallFinal.score1 === null) return [];
@@ -636,7 +634,6 @@
                     return { id: athlete.id, name: athlete.name, points: basePoints + bonusPoints, basePoints, bonusPoints, stage };
                 }).sort((a, b) => b.points - a.points);
             }
-
             function openMatchModal(matchId) {
                 let match; const [idPrefix, type] = matchId.split('-'); const roundKeyMap = { 'QF': 'quarterfinals', 'SF': 'semifinals', 'F': 'final' };
                 if (GROUP_NAMES.includes(idPrefix)) { match = state.groupMatches[idPrefix].find(m => m.id === matchId); } 
@@ -669,7 +666,6 @@
                 document.getElementById('closeModal').onclick = closeModal;
                 modal.classList.remove('hidden');
             }
-
             function saveMatchResult() {
                 if (!state.currentMatch) return;
                 let score1 = 0, score2 = 0; state.currentMatch.sets = [];
@@ -689,12 +685,10 @@
                 else { advanceWinner(state.currentMatch); }
                 closeModal();
             }
-
             function closeModal() {
                 state.currentMatch = null;
                 document.getElementById('matchModal').classList.add('hidden');
             }
-
             function showConfirm(message, title, callback) {
                 const modal = document.getElementById('genericModal');
                 document.getElementById('genericModalTitle').textContent = title;
@@ -715,6 +709,7 @@
                 return doc;
             }
             function getSafeFilename(name) { return (name || '').replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'torneio'; }
+            function formatSets(sets) { if (!sets || sets.length === 0) return ''; return sets.map(set => `${set.s1}-${set.s2}`).join(', '); }
 
             function initPdfButtons() {
                 document.getElementById('exportSetupBtn').addEventListener('click', () => {
@@ -728,14 +723,10 @@
                     let startY = 40;
                     GROUP_NAMES.forEach((name, index) => {
                         const group = state.groups[name];
-                        const colIndex = index % 4;
-                        const rowIndex = Math.floor(index / 4);
-                        const xPos = 15 + colIndex * 70;
-                        const currentY = startY + rowIndex * 40;
+                        const colIndex = index % 4; const rowIndex = Math.floor(index / 4);
+                        const xPos = 15 + colIndex * 70; const currentY = startY + rowIndex * 40;
                         doc.text(`Grupo ${name}`, xPos, currentY);
-                        group.forEach((athlete, athleteIndex) => {
-                            doc.text(`${athlete.rank}º - ${athlete.name}`, xPos, currentY + 8 + (athleteIndex * 7));
-                        });
+                        group.forEach((athlete, athleteIndex) => { doc.text(`${athlete.rank}º - ${athlete.name}`, xPos, currentY + 8 + (athleteIndex * 7)); });
                     });
                     doc.save(`grupos_${getSafeFilename(state.tournamentName)}.pdf`);
                 });
@@ -751,8 +742,10 @@
                             const result = match.score1 !== null ? `${match.score1} x ${match.score2}` : '-';
                             return [`${p1Name}\nvs\n${p2Name}`, result];
                         });
-                        doc.autoTable({ head: [[title, 'Resultado']], body: body, startY: startY });
-                        startY = doc.autoTable.previous.finalY + 15;
+                        if (body.length > 0) {
+                           doc.autoTable({ head: [[title, 'Resultado']], body: body, startY: startY });
+                           startY = doc.autoTable.previous.finalY + 15;
+                        }
                     });
                     doc.save(`chave_${getSafeFilename(state.tournamentName)}.pdf`);
                 });
@@ -761,13 +754,45 @@
                     doc.autoTable({ html: '#finalRanking', startY: 40 });
                     doc.save(`ranking_${getSafeFilename(state.tournamentName)}.pdf`);
                 });
-                // Add other PDF buttons logic here...
+                document.getElementById('exportCompleteBtn').addEventListener('click', exportCompleteReport);
+                document.getElementById('exportSumulasBtn').addEventListener('click', () => exportSummaries({isGroup: true}, 'Súmulas - Fase de Grupos', 'sumulas_grupos'));
+                document.getElementById('exportSumulaEliminatoriaBtn').addEventListener('click', () => exportSummaries({ 'Lado A - Quartas': state.elimination.sideA.quarterfinals, 'Lado A - Semifinais': state.elimination.sideA.semifinals, 'Lado A - Final': state.elimination.sideA.final, 'Lado B - Quartas': state.elimination.sideB.quarterfinals, 'Lado B - Semifinais': state.elimination.sideB.semifinals, 'Lado B - Final': state.elimination.sideB.final }, 'Súmulas - Eliminatórias', 'sumulas_eliminatorias'));
+                document.getElementById('exportSumulaFinalBtn').addEventListener('click', () => exportSummaries({isFinal: true}, 'Súmula da Final', 'sumulas_finais'));
             }
             
+            function exportCompleteReport() {
+                const doc = setupPdf('Relatório Final Completo', 'landscape');
+                let startY = 40;
+                alert("Função de relatório completo ainda a ser implementada.");
+            }
+            function exportSummaries(rounds, title, filename) {
+                const doc = setupPdf(title, 'landscape');
+                let startY = 40;
+                const addSummaryToDoc = (matchTitle, match) => {
+                    if (!match || !match.p1) return; if (startY > 150) { doc.addPage(); startY = 20; }
+                    const p1 = getAthleteById(match.p1); const p2 = getAthleteById(match.p2); const body = match.sets.map((set, i) => [`Set ${i + 1}`, set.s1, set.s2]);
+                    doc.autoTable({ head: [[{ content: matchTitle, colSpan: 3, styles: { halign: 'center' } }]], body: [[`${p1.name} (${p1.rank}º)`, 'vs', `${p2.name} (${p2.rank}º)`]], startY: startY, theme: 'plain' });
+                    startY = doc.autoTable.previous.finalY;
+                    doc.autoTable({ head: [['Set', p1.name, p2.name]], body: body, startY: startY, theme: 'grid' }); startY = doc.autoTable.previous.finalY;
+                    doc.autoTable({ body: [[{content: `Resultado Final: ${match.score1} - ${match.score2}`, colSpan: 3, styles: { halign: 'center' }}]], startY: startY }); startY = doc.autoTable.previous.finalY + 15;
+                };
+                if (rounds.isGroup) { GROUP_NAMES.forEach(name => { (state.groupMatches[name] || []).filter(m => m.score1 !== null).forEach(match => addSummaryToDoc(`Grupo ${name}`, match)); }); }
+                else if (rounds.isFinal) { state.elimination.overallFinal.filter(m => m.score1 !== null).forEach(match => addSummaryToDoc('Final Geral', match)); }
+                else { Object.entries(rounds).forEach(([title, matches]) => { matches.filter(m => m.score1 !== null).forEach(match => addSummaryToDoc(title, match)); }); }
+                doc.save(`${filename}_${getSafeFilename(state.tournamentName)}.pdf`);
+            }
+
             loginBtn.addEventListener('click', handleLogin);
-            document.getElementById('password').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleLogin();
+            
+            ['username', 'password'].forEach(id => {
+                document.getElementById(id).addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleLogin();
+                    }
+                });
             });
+            
             initAuth();
         });
     </script>
