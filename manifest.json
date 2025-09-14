@@ -1,3 +1,4 @@
+<<<<<<< SEARCH
 {
   "name": "Gestor de Torneios ETMPAN",
   "short_name": "Gestor ETMPAN",
@@ -19,3 +20,62 @@
     }
   ]
 }
+=======
+{
+  "name": "Gestor de Torneios ETMPAN",
+  "short_name": "Gestor ETMPAN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f8fc",
+  "theme_color": "#0D47A1",
+  "description": "Um gestor completo de torneios de 8 grupos com fase eliminatória para competições esportivas",
+  "lang": "pt-BR",
+  "categories": ["sports", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "./icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+>>>>>>> REPLACE
