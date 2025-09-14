@@ -241,7 +241,7 @@
         }
         
         // VARIÁVEIS GLOBAIS
-        const APP_VERSION = "4.0"; 
+        const APP_VERSION = "4.1"; 
         let appState = {}; 
         let state = {}; 
         const NUM_ATHLETES = 24;
@@ -592,7 +592,7 @@
             });
         }
 
-        // FASE ELIMINATÓRIA
+        // FASE ELIMINATÓRIA - FUNÇÕES CORRIGIDAS
         function renderEliminationPhase() {
             renderEliminationRound('sideA', 'quarterfinals', 'matchesA-QF'); 
             renderEliminationRound('sideA', 'semifinals', 'matchesA-SF'); 
@@ -603,7 +603,9 @@
             renderEliminationRound(null, 'overallFinal', 'matchesFinal');
         }
         
+        // FUNÇÃO CORRIGIDA - GERAÇÃO DO BRACKET ELIMINATÓRIO
         function generateEliminationBracket() {
+            // Primeiro, calcular todas as classificações dos grupos
             const qualifiers = [];
             GROUP_NAMES.forEach(groupName => { 
                 calculateStandings(groupName); 
@@ -615,27 +617,30 @@
             });
             
             state.elimination.qualifiers = qualifiers;
-            const getQ = (pos) => {
+            
+            // Função auxiliar para encontrar qualificado por posição
+            const getQualifier = (pos) => {
                 const qualifier = qualifiers.find(q => q.pos === pos);
                 return qualifier ? qualifier.athleteId : null;
             };
             
-            // QUARTAS DE FINAL
+            // QUARTAS DE FINAL - LADO A
             state.elimination.sideA.quarterfinals = [ 
-                { id: 'A-QF-1', p1: getQ('1º A'), p2: getQ('2º H'), score1: null, score2: null, sets: [] },
-                { id: 'A-QF-2', p1: getQ('1º G'), p2: getQ('2º B'), score1: null, score2: null, sets: [] },
-                { id: 'A-QF-3', p1: getQ('1º D'), p2: getQ('2º E'), score1: null, score2: null, sets: [] },
-                { id: 'A-QF-4', p1: getQ('1º F'), p2: getQ('2º C'), score1: null, score2: null, sets: [] }
+                { id: 'A-QF-1', p1: getQualifier('1º A'), p2: getQualifier('2º H'), score1: null, score2: null, sets: [] },
+                { id: 'A-QF-2', p1: getQualifier('1º G'), p2: getQualifier('2º B'), score1: null, score2: null, sets: [] },
+                { id: 'A-QF-3', p1: getQualifier('1º D'), p2: getQualifier('2º E'), score1: null, score2: null, sets: [] },
+                { id: 'A-QF-4', p1: getQualifier('1º F'), p2: getQualifier('2º C'), score1: null, score2: null, sets: [] }
             ];
             
+            // QUARTAS DE FINAL - LADO B
             state.elimination.sideB.quarterfinals = [ 
-                { id: 'B-QF-1', p1: getQ('1º B'), p2: getQ('2º G'), score1: null, score2: null, sets: [] },
-                { id: 'B-QF-2', p1: getQ('1º H'), p2: getQ('2º A'), score1: null, score2: null, sets: [] },
-                { id: 'B-QF-3', p1: getQ('1º C'), p2: getQ('2º F'), score1: null, score2: null, sets: [] },
-                { id: 'B-QF-4', p1: getQ('1º E'), p2: getQ('2º D'), score1: null, score2: null, sets: [] }
+                { id: 'B-QF-1', p1: getQualifier('1º B'), p2: getQualifier('2º G'), score1: null, score2: null, sets: [] },
+                { id: 'B-QF-2', p1: getQualifier('1º H'), p2: getQualifier('2º A'), score1: null, score2: null, sets: [] },
+                { id: 'B-QF-3', p1: getQualifier('1º C'), p2: getQualifier('2º F'), score1: null, score2: null, sets: [] },
+                { id: 'B-QF-4', p1: getQualifier('1º E'), p2: getQualifier('2º D'), score1: null, score2: null, sets: [] }
             ];
             
-            // SEMIFINAIS
+            // SEMIFINAIS - Inicialmente sem jogadores definidos
             state.elimination.sideA.semifinals = [
                 { id: 'A-SF-1', p1: null, p2: null, score1: null, score2: null, sets: [] },
                 { id: 'A-SF-2', p1: null, p2: null, score1: null, score2: null, sets: [] }
@@ -646,7 +651,7 @@
                 { id: 'B-SF-2', p1: null, p2: null, score1: null, score2: null, sets: [] }
             ];
             
-            // FINAIS
+            // FINAIS DOS LADOS - Inicialmente sem jogadores definidos
             state.elimination.sideA.final = [
                 { id: 'A-F-1', p1: null, p2: null, score1: null, score2: null, sets: [] }
             ];
@@ -655,10 +660,12 @@
                 { id: 'B-F-1', p1: null, p2: null, score1: null, score2: null, sets: [] }
             ];
             
-            // FINAL GERAL
+            // FINAL GERAL - Inicialmente sem jogadores definidos
             state.elimination.overallFinal = [
                 { id: 'Overall-F-1', p1: null, p2: null, score1: null, score2: null, sets: [] }
             ];
+
+            console.log('Bracket gerado:', state.elimination);
         }
         
         function renderEliminationRound(side, roundKey, containerId) {
@@ -707,13 +714,14 @@
             });
         }
         
-        // FUNÇÃO CORRIGIDA - AVANÇO DOS VENCEDORES
+        // FUNÇÃO CORRIGIDA - AVANÇO DOS VENCEDORES COM LÓGICA CORRETA
         function advanceWinner(match) {
-            if (match.score1 === null) return;
+            if (match.score1 === null || match.score1 === match.score2) return;
             
             const winnerId = match.score1 > match.score2 ? match.p1 : match.p2;
+            console.log(`Avançando vencedor: ${match.id} -> ${winnerId}`);
             
-            // QUARTAS DE FINAL -> SEMIFINAIS
+            // AVANÇOS DAS QUARTAS DE FINAL PARA AS SEMIFINAIS
             if (match.id === 'A-QF-1') {
                 state.elimination.sideA.semifinals[0].p1 = winnerId;
             } else if (match.id === 'A-QF-2') {
@@ -722,7 +730,9 @@
                 state.elimination.sideA.semifinals[1].p1 = winnerId;
             } else if (match.id === 'A-QF-4') {
                 state.elimination.sideA.semifinals[1].p2 = winnerId;
-            } else if (match.id === 'B-QF-1') {
+            }
+            // LADO B - QUARTAS PARA SEMIFINAIS
+            else if (match.id === 'B-QF-1') {
                 state.elimination.sideB.semifinals[0].p1 = winnerId;
             } else if (match.id === 'B-QF-2') {
                 state.elimination.sideB.semifinals[0].p2 = winnerId;
@@ -732,7 +742,7 @@
                 state.elimination.sideB.semifinals[1].p2 = winnerId;
             }
             
-            // SEMIFINAIS -> FINAL DO LADO
+            // AVANÇOS DAS SEMIFINAIS PARA AS FINAIS DOS LADOS
             else if (match.id === 'A-SF-1') {
                 state.elimination.sideA.final[0].p1 = winnerId;
             } else if (match.id === 'A-SF-2') {
@@ -743,28 +753,59 @@
                 state.elimination.sideB.final[0].p2 = winnerId;
             }
             
-            // FINAL DO LADO -> FINAL GERAL
+            // AVANÇOS DAS FINAIS DOS LADOS PARA A FINAL GERAL
             else if (match.id === 'A-F-1') {
                 state.elimination.overallFinal[0].p1 = winnerId;
             } else if (match.id === 'B-F-1') {
                 state.elimination.overallFinal[0].p2 = winnerId;
             }
             
-            // FINAL GERAL -> RESULTADOS
+            // FINAL GERAL -> IR PARA RESULTADOS
             else if (match.id === 'Overall-F-1') {
                 state.currentPhase = 'results';
             }
             
+            console.log('Estado após avanço:', state.elimination);
             saveState(); 
             render();
         }
 
-        // FASE DE RESULTADOS
+        // FUNÇÃO CORRIGIDA - BUSCA DE PARTIDA MELHORADA
+        function findMatchById(matchId) {
+            // Buscar em grupos
+            for (const groupName of GROUP_NAMES) {
+                const matches = state.groupMatches[groupName] || [];
+                const match = matches.find(m => m.id === matchId);
+                if (match) return match;
+            }
+            
+            // Buscar em eliminatórias
+            const eliminationPaths = [
+                state.elimination.sideA.quarterfinals,
+                state.elimination.sideA.semifinals,
+                state.elimination.sideA.final,
+                state.elimination.sideB.quarterfinals,
+                state.elimination.sideB.semifinals,
+                state.elimination.sideB.final,
+                state.elimination.overallFinal
+            ];
+            
+            for (const matches of eliminationPaths) {
+                const match = matches.find(m => m.id === matchId);
+                if (match) return match;
+            }
+            
+            return null;
+        }
+
+        // FASE DE RESULTADOS - FUNÇÃO CORRIGIDA
         function renderResultsPhase() {
             const ranking = calculateRanking();
+            if (ranking.length === 0) return;
+            
             const champion = ranking[0] || {}; 
             const runnerup = ranking[1] || {};
-            const thirdPlaces = ranking.filter(r => r.stage === '3º Lugar');
+            const thirdPlaces = ranking.filter((r, index) => index >= 2 && index <= 3);
             const thirdA = thirdPlaces[0] || {}; 
             const thirdB = thirdPlaces[1] || {};
             
@@ -777,32 +818,47 @@
             table.innerHTML = `<thead><tr><th>Pos.</th><th>Atleta</th><th>Pontos</th><th>Etapa</th></tr></thead><tbody>${ranking.map((r, i) => `<tr><td>${i+1}º</td><td>${r.name}</td><td>${r.points}</td><td>${r.stage}</td></tr>`).join('')}</tbody>`;
         }
         
+        // FUNÇÃO CORRIGIDA - CÁLCULO DE RANKING
         function calculateRanking() {
-            const finalA = state.elimination.sideA.final[0]; 
-            const finalB = state.elimination.sideB.final[0]; 
             const overallFinal = state.elimination.overallFinal[0];
             
-            if(!overallFinal || overallFinal.score1 === null) return [];
+            if (!overallFinal || overallFinal.score1 === null) return [];
             
-            const champion = overallFinal.score1 > overallFinal.score2 ? overallFinal.p1 : overallFinal.p2;
-            const runnerUp = overallFinal.score1 < overallFinal.score2 ? overallFinal.p1 : overallFinal.p2;
-            const thirdPlaceA = finalA && finalA.score1 !== null ? (finalA.score1 < finalA.score2 ? finalA.p1 : finalA.p2) : null; 
-            const thirdPlaceB = finalB && finalB.score1 !== null ? (finalB.score1 < finalB.score2 ? finalB.p1 : finalB.p2) : null;
+            const championId = overallFinal.score1 > overallFinal.score2 ? overallFinal.p1 : overallFinal.p2;
+            const runnerUpId = overallFinal.score1 < overallFinal.score2 ? overallFinal.p1 : overallFinal.p2;
             
-            const quarterfinalists = [ 
-                ...state.elimination.sideA.semifinals.filter(m => m.score1 !== null).map(m => m.score1 < m.score2 ? m.p1 : m.p2), 
-                ...state.elimination.sideB.semifinals.filter(m => m.score1 !== null).map(m => m.score1 < m.score2 ? m.p1 : m.p2) 
-            ];
-            const round16participants = [ 
-                ...state.elimination.sideA.quarterfinals.filter(m => m.score1 !== null).map(m => m.score1 < m.score2 ? m.p1 : m.p2), 
-                ...state.elimination.sideB.quarterfinals.filter(m => m.score1 !== null).map(m => m.score1 < m.score2 ? m.p1 : m.p2) 
-            ];
+            // Identificar terceiros lugares (perdedores das finais dos lados)
+            const finalA = state.elimination.sideA.final[0];
+            const finalB = state.elimination.sideB.final[0];
+            const thirdPlaceAId = finalA && finalA.score1 !== null ? (finalA.score1 < finalA.score2 ? finalA.p1 : finalA.p2) : null; 
+            const thirdPlaceBId = finalB && finalB.score1 !== null ? (finalB.score1 < finalB.score2 ? finalB.p1 : finalB.p2) : null;
+            
+            // Identificar semifinalistas (perdedores das semifinais)
+            const quarterfinalists = [];
+            [...state.elimination.sideA.semifinals, ...state.elimination.sideB.semifinals].forEach(match => {
+                if (match.score1 !== null) {
+                    const loserId = match.score1 < match.score2 ? match.p1 : match.p2;
+                    quarterfinalists.push(loserId);
+                }
+            });
+            
+            // Identificar eliminados nas quartas (perdedores das quartas de final)
+            const round16participants = [];
+            [...state.elimination.sideA.quarterfinals, ...state.elimination.sideB.quarterfinals].forEach(match => {
+                if (match.score1 !== null) {
+                    const loserId = match.score1 < match.score2 ? match.p1 : match.p2;
+                    round16participants.push(loserId);
+                }
+            });
+            
+            const divisionPoints = POINTS_CONFIG[state.division] || {};
             
             return state.athletes.map(athlete => {
-                let basePoints = 0; 
+                let basePoints = divisionPoints.GROUP_STAGE || 0; 
                 let bonusPoints = 0; 
                 let stage = 'Fase de Grupos';
                 
+                // Calcular pontos de bônus baseado nos sets
                 const allMatches = [
                     ...Object.values(state.groupMatches).flat(), 
                     ...state.elimination.sideA.quarterfinals,
@@ -823,49 +879,57 @@
                     }
                 });
                 
-                const divisionPoints = POINTS_CONFIG[state.division] || {};
-                if (champion === athlete.id) { 
-                    stage = 'Campeão'; basePoints = divisionPoints.CHAMPION; 
-                } else if (runnerUp === athlete.id) { 
-                    stage = 'Vice-Campeão'; basePoints = divisionPoints.RUNNER_UP; 
-                } else if (thirdPlaceA === athlete.id || thirdPlaceB === athlete.id) { 
-                    stage = '3º Lugar'; basePoints = divisionPoints.SEMIFINALS; 
+                // Determinar estágio e pontos base
+                if (championId === athlete.id) { 
+                    stage = 'Campeão'; 
+                    basePoints = divisionPoints.CHAMPION || 0; 
+                } else if (runnerUpId === athlete.id) { 
+                    stage = 'Vice-Campeão'; 
+                    basePoints = divisionPoints.RUNNER_UP || 0; 
+                } else if (thirdPlaceAId === athlete.id || thirdPlaceBId === athlete.id) { 
+                    stage = '3º Lugar'; 
+                    basePoints = divisionPoints.SEMIFINALS || 0; 
                 } else if (quarterfinalists.includes(athlete.id)) { 
-                    stage = 'Quartas de Final'; basePoints = divisionPoints.QUARTERFINALS; 
+                    stage = 'Quartas de Final'; 
+                    basePoints = divisionPoints.QUARTERFINALS || 0; 
                 } else if (round16participants.includes(athlete.id)) { 
-                    stage = 'Oitavas de Final'; basePoints = divisionPoints.ROUND_16; 
+                    stage = 'Oitavas de Final'; 
+                    basePoints = divisionPoints.ROUND_16 || 0; 
                 } else { 
-                    stage = 'Fase de Grupos'; basePoints = divisionPoints.GROUP_STAGE; 
+                    stage = 'Fase de Grupos'; 
+                    basePoints = divisionPoints.GROUP_STAGE || 0; 
                 }
                 
                 return { 
-                    id: athlete.id, name: athlete.name, 
-                    points: basePoints + bonusPoints, basePoints, bonusPoints, stage 
+                    id: athlete.id, 
+                    name: athlete.name, 
+                    points: basePoints + bonusPoints, 
+                    basePoints, 
+                    bonusPoints, 
+                    stage 
                 };
             }).sort((a, b) => b.points - a.points);
         }
 
-        // MODAL DE PARTIDAS
+        // MODAL DE PARTIDAS - FUNÇÃO CORRIGIDA
         function openMatchModal(matchId) {
-            let match; 
-            const [idPrefix, type] = matchId.split('-'); 
-            const roundKeyMap = { 'QF': 'quarterfinals', 'SF': 'semifinals', 'F': 'final' };
+            const match = findMatchById(matchId);
             
-            if (GROUP_NAMES.includes(idPrefix)) { 
-                match = state.groupMatches[idPrefix].find(m => m.id === matchId); 
-            } else if (idPrefix === 'A' || idPrefix === 'B') { 
-                match = state.elimination[idPrefix === 'A' ? 'sideA' : 'sideB'][roundKeyMap[type]].find(m => m.id === matchId); 
-            } else if (idPrefix === 'Overall') { 
-                match = state.elimination.overallFinal.find(m => m.id === matchId); 
+            if (!match || !match.p1 || !match.p2) {
+                console.error('Partida não encontrada ou jogadores não definidos:', matchId);
+                return;
             }
-            
-            if (!match || !match.p1 || !match.p2) return;
             
             state.currentMatch = match; 
             const modal = document.getElementById('matchModal'); 
             const modalBody = document.getElementById('matchModalBody');
             const p1 = getAthleteById(match.p1);
             const p2 = getAthleteById(match.p2);
+            
+            if (!p1 || !p2) {
+                console.error('Atletas não encontrados:', match.p1, match.p2);
+                return;
+            }
             
             let setsHTML = '';
             for (let i = 0; i < 5; i++) {
