@@ -1,0 +1,21 @@
+{
+  "name": "Gestor de Torneios ETMPAN",
+  "short_name": "Gestor ETMPAN",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f7f8fc",
+  "theme_color": "#0D47A1",
+  "description": "Um gestor de torneios de 8 grupos com fase eliminatória.",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/0D47A1/FFFFFF?text=G",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://placehold.co/512x512/0D47A1/FFFFFF?text=GESTOR",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
